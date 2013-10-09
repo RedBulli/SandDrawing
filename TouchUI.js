@@ -1,32 +1,30 @@
-function addListeners() {
-	var box = document.getElementById("sandbox");
-	box.addEventListener("touchstart", start);
-	box.addEventListener("touchend", end);
-	box.addEventListener("touchcancel", cancel);
-	box.addEventListener("touchleave", end);
-	box.addEventListener("touchmove", move);
+function TouchUI(){
+	this.currentTouches = New Array(); // ongoing touches
 }
 
-var currentTouches = New Array(); // ongoing touches
-var x;
-var y;
-var prevX;
-var prevY;
+TouchUI.prototype.addListeners = function() {
+	var box = document.getElementById("sandbox");
+	box.addEventListener("touchstart", startTouch);
+	box.addEventListener("touchend", endTouch);
+	box.addEventListener("touchcancel", cancelTouch);
+	box.addEventListener("touchleave", endTouch);
+	box.addEventListener("touchmove", moveTouch);
+}
 
-function start(event) {
+TouchUI.prototype.startTouch = function(event) {
 	event.preventDefault();
 	var box = document.getElementById("sandbox");
 	var ctx = box.getContext("2d");
 
 	for (var i = 0; i < event.changedTouches.length; i++) {
-		currentTouches.push(event.changedTouches[i]);
-		x = event.changedTouches[i].pageX;
-		y = event.changedTouches[i].pageY;
+		this.currentTouches.push(event.changedTouches[i]);
+		var x = event.changedTouches[i].pageX;
+		var y = event.changedTouches[i].pageY;
 		// Mitä näille tehdään?
 	}
 }
 
-function move(event) {
+TouchUI.prototype.moveTouch = function(event) {
 	event.preventDefault();
 	var box = document.getElementById("sandbox");
 	var ctx = box.getContext("2d");
@@ -34,19 +32,18 @@ function move(event) {
 	for (var i = 0; i < event.changedTouches.length; i++) {
 		var index = findTouchIndex(event.changedTouches[i].identifier);
 		if (index >= 0) {
-			prevX = currentTouches[index].pageX;
-			prevY = currentTouches[index].pageY;
-			x = event.changedTouches[i].pageX;
-			y = event.changedTouches[i].pageY;
+			var prevX = this.currentTouches[index].pageX;
+			var prevY = this.currentTouches[index].pageY;
+			var x = event.changedTouches[i].pageX;
+			var y = event.changedTouches[i].pageY;
 			// Mitä näille tehdään?
 
-			currentTouches[index] = event.changedTouches[i];
-			// Voiko näin edes tehdä
+			this.currentTouches[index] = event.changedTouches[i];
 		}
 	}
 }
 
-function end(event) {
+TouchUI.prototype.endTouch = function(event) {
 	event.preventDefault();
 	var box = document.getElementById("sandbox");
 	var ctx = box.getContext("2d");
@@ -54,23 +51,23 @@ function end(event) {
 	for (var i = 0; i < event.changedTouches.length; i++) {
 		var index = findTouchIndex(event.changedTouches[i].identifier);
 		if (index >= 0) {
-			prevX = currentTouches[index].pageX;
-			prevY = currentTouches[index].pageY;
-			x = event.changedTouches[i].pageX;
-			y = event.changedTouches[i].pageY;
+			var prevX = this.currentTouches[index].pageX;
+			var prevY = this.currentTouches[index].pageY;
+			var x = event.changedTouches[i].pageX;
+			var y = event.changedTouches[i].pageY;
 			// Mitä näille tehdään?
-			currentTouches.splice(index, 1); // Poistetaan kyseinen touch
+			this.currentTouches.splice(index, 1); // Poistetaan kyseinen touch
 		}
 	}
 }
 
-function cancel(event) {
+TouchUI.prototype.cancelTouch = function(event) {
 	// Tarvitaanko tätä edes
 }
 
-function findTouchIndex(find) {
-	for (var i = 0; i < currentTouches.length; i++) {
-		var id = currentTouches[i].identifier;
+TouchUI.prototype.findTouchIndex = function(find) {
+	for (var i = 0; i < this.currentTouches.length; i++) {
+		var id = this.currentTouches[i].identifier;
 		if (id == find) {
 			return i
 		}
