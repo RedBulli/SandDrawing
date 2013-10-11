@@ -12,10 +12,9 @@ SandCanvas.prototype.drawChanged = function(changedCoords) {
 };
 
 SandCanvas.prototype.drawPixel = function(x, y, z) {
-  var percentage = 100;
-  if (z > 0) {
-    percentage = -5*z;
-  }
+  var percentage = -95 * (1 - Math.pow(Math.E, -0.2 * z));
+  var rnd = Utils.gaussianRandom().first * 3;
+  percentage += rnd;
   this.ctx.fillStyle = this.getShadeColor(SAND_COLOR, percentage);
   this.ctx.fillRect(x, y, 1, 1);
 };

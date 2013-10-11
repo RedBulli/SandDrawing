@@ -1,13 +1,8 @@
 var Grid = function(width, height) {
   this.width = width;
   this.height = height;
-  this.grid = [];
-  for (var i=0; i<this.width; i++) {
-    this.grid.push([]);
-    for (var j=0; j<this.height; j++) {
-      this.grid[i].push(2);
-    }
-  }
+  this.grid = Utils.create2DArray(width, height, 2);
+  TurbulentWaveFilter.applyTo(this.grid);
 };
 
 Grid.prototype.getGrains = function() {
