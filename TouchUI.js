@@ -13,19 +13,18 @@ var TouchUI = (function(){
 		box.addEventListener("touchcancel", cancelTouch);
 		box.addEventListener("touchleave", endTouch);
 		box.addEventListener("touchmove", moveTouch);
-		console.log("listeners added");
 	}
 
 	function startTouch(event) {
-		console.log("starttouch");
 		event.preventDefault();
 		var box = document.getElementById("sandbox");
 		var ctx = box.getContext("2d");
 
 		for (var i = 0; i < event.changedTouches.length; i++) {
 			currentTouches.push(event.changedTouches[i]);
-			var x = event.changedTouches[i].pageX;
-			var y = event.changedTouches[i].pageY;
+			var offset = box.offset();
+			var x = event.changedTouches[i].pageX - offset.left;
+			var y = event.changedTouches[i].pageY - offset.top;
 			console.log("x: " + x);
 			console.log("y: " + y);
 		}
@@ -39,10 +38,11 @@ var TouchUI = (function(){
 		for (var i = 0; i < event.changedTouches.length; i++) {
 			var index = findTouchIndex(event.changedTouches[i].identifier);
 			if (index >= 0) {
-				var prevX = currentTouches[index].pageX;
-				var prevY = currentTouches[index].pageY;
-				var x = event.changedTouches[i].pageX;
-				var y = event.changedTouches[i].pageY;
+				var offset = box.offset();
+				var prevX = currentTouches[index].pageX - offset.left;
+				var prevY = currentTouches[index].pageY - offset.top;
+				var x = event.changedTouches[i].pageX - offset.left;
+				var y = event.changedTouches[i].pageY - offset.top;
 				console.log("x: " + x);
 				console.log("y: " + y);
 				console.log("prevX: " + prevX);
@@ -61,10 +61,11 @@ var TouchUI = (function(){
 		for (var i = 0; i < event.changedTouches.length; i++) {
 			var index = findTouchIndex(event.changedTouches[i].identifier);
 			if (index >= 0) {
-				var prevX = currentTouches[index].pageX;
-				var prevY = currentTouches[index].pageY;
-				var x = event.changedTouches[i].pageX;
-				var y = event.changedTouches[i].pageY;
+				var offset = box.offset();
+				var prevX = currentTouches[index].pageX - offset.left;
+				var prevY = currentTouches[index].pageY - offset.top;
+				var x = event.changedTouches[i].pageX - offset.left;
+				var y = event.changedTouches[i].pageY - offset.top;
 				console.log("x: " + x);
 				console.log("y: " + y);
 				console.log("prevX: " + prevX);
