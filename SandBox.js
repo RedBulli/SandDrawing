@@ -7,15 +7,23 @@ var Sandbox = function(elementId, width, height) {
 };
 
 Sandbox.prototype.initialize = function() {
+  var allCoords = new CoordSet();
+  for (var i=0;i<WIDTH;i++) {
+    for (var j=0;j<HEIGHT;j++) {
+      allCoords.addCoord(i,j);
+    }
+  }
+  this.erosion.run(allCoords);
   this.sandCanvas.drawWholeBox();
 };
 
 Sandbox.prototype.dropSand = function(x, y) {
   var activeCoords = new CoordSet();
-  for (var i=-5; i<5; i++) {
-    for (var j=-5; j<5; j++) {
-      if (Math.sqrt(i*i+j*j) <= 5) {
-        if(Math.random() > 0.5) {
+  var radius = 10;
+  for (var i=-radius; i<radius; i++) {
+    for (var j=-radius; j<radius; j++) {
+      if (Math.sqrt(i*i+j*j) <= radius) {
+        if(Math.random() > 0.8) {
           this.grid.dropSand(x+i, y+j, 1);
           activeCoords.addCoord(x+i, y+j);
         }

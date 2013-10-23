@@ -15,6 +15,8 @@ Grid.prototype.setHeight = function(x, y, height) {
 
 Grid.prototype.dropSand = function(x, y, amount) {
   this.grid[x][y] += amount;
+  if (this.grid[x][y] < 0)
+    this.grid[x][y] = 0;
 };
 
 Grid.prototype.getHeight = function(x, y) {
