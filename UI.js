@@ -2,24 +2,30 @@ var UI = function(canvasId,  sandbox) {
   this.canvas = $('#' + canvasId);
   this.sandbox = sandbox;
   this.initialize();
+  this.mousePressed = false;
 };
 
-UI.prototype.initialize = function(first_argument) {
-  var timeout, mouseCoords;
+UI.prototype.initialize = function() {
   var _this = this;
+  var mouseLoop = function() {
+    if (_this.mousePressed) {
+      _this.sandbox.pushSand(_this.mouseCoords.x, _this.mouseCoords.y, 5);
+      requestAnimationFrame(mouseLoop);
+    }
+  };
+
   this.canvas.mousedown(function(event) {
-    mouseCoords = _this.getCanvasTouchCoords(event);
-    timeout = setInterval(function(){
-      _this.sandbox.dropSand(mouseCoords.x, mouseCoords.y, 5);
-    }, 25);
+    _this.mouseCoords = _this.getCanvasTouchCoords(event);
+    _this.mousePressed = true;
+    requestAnimationFrame(mouseLoop);
     return false;
   });
   this.canvas.mousemove(function(event) {
-    mouseCoords = _this.getCanvasTouchCoords(event);
+    _this.mouseCoords = _this.getCanvasTouchCoords(event);
   });
 
   $(document).mouseup(function(){
-    clearInterval(timeout);
+    _this.mousePressed = false;
     return false;
   });
 };

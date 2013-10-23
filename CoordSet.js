@@ -10,6 +10,12 @@ function CoordSet()
     this.items[x][y] = undefined;
   };
 
+  this.deleteCoord = function(x, y) {
+    delete(this.items[x][y]);
+    if ($.isEmptyObject(this.items[x])) 
+      delete(this.items[x]);
+  };
+
   this.each = function(fn) {
     var rows = Object.keys(this.items);
     for (var i=0; i<rows.length; i++) {
@@ -18,6 +24,14 @@ function CoordSet()
         fn(parseInt(rows[i]), parseInt(cols[j]));
       }
     }
+  };
+
+  this.size = function() {
+    var count = 0;
+    this.each(function(x, y) {
+      count++;
+    });
+    return count;
   };
 
   this.isEmpty = function() {
@@ -29,6 +43,15 @@ function CoordSet()
     coordSet.each(function(x, y) {
       _this.addCoord(x, y);
     });
+    return this;
+  };
+
+  this.minus = function(coordSet) {
+    var _this = this;
+    coordSet.each(function(x, y) {
+      _this.deleteCoord(x, y);
+    });
+    return this;
   };
 
 }

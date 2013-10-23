@@ -42,6 +42,45 @@ Grid.prototype.getNeighbours = function(x, y) {
   return neighbours;
 };
 
+Grid.prototype.getNeighboursCoordSet = function(x, y) {
+  var xVals = this.getNeighbourValues(x, 'x');
+  var yVals = this.getNeighbourValues(y, 'y');
+  var neighbours = new CoordSet();
+  for (var i = xVals.lower; i<=xVals.upper; i++) {
+    for (var j = yVals.lower; j<=yVals.upper; j++) {
+      if (i===x && j===y) {}
+      else {
+        neighbours.addCoord(i, j);
+      }
+    }
+  }
+  return neighbours;
+};
+
+Grid.prototype.getInnerCoords = function(x, y, radius) {
+  var coords = new CoordSet();
+  var floorRadius = Math.floor(radius);
+  var ceilRadius = Math.ceil(radius);
+  for (var i=-floorRadius; i<ceilRadius; i++) {
+    for (var j=-floorRadius; j<ceilRadius; j++) {
+      if(Math.sqrt(i*i+j*j)-radius < 0.707) {
+        coords.addCoord(x+i, y+j);
+      }
+    }
+  }
+  return coords;
+};
+
+Grid.prototype.getOuterNeighbours = function(coords) {
+  var neighbours = new CoordSet();
+  var _this = this;
+  coords.each(function(x, y) {
+    neighbours.mergeSets(_this.getNeighboursCoordSet(x, y));
+  });
+  neighbours.minus(coords)
+  return neighbours;
+};
+
 Grid.prototype.getNeighbourValues = function(value, axis) {
   var maxVal = this.width;
   if (axis === 'y') {

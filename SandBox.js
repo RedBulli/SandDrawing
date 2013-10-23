@@ -34,6 +34,23 @@ Sandbox.prototype.dropSand = function(x, y) {
   this.sandCanvas.drawChanged(changedGrid);
 };
 
+Sandbox.prototype.pushSand = function(x, y) {
+  var innerCoords = this.grid.getInnerCoords(x,y,2.1);
+  var neighbours = this.grid.getOuterNeighbours(innerCoords);
+  var totalAmount = 0;
+  var _this = this;
+  innerCoords.each(function(x, y) {
+    totalAmount += _this.grid.getHeight(x,y);
+    _this.grid.setHeight(x, y, 0);
+  });
+  var distAmount = totalAmount / neighbours.size();
+  neighbours.each(function(x, y) {
+    _this.grid.dropSand(x, y, distAmount);
+  });
+  var changedGrid = this.erosion.run(innerCoords.mergeSets(neighbours));
+  this.sandCanvas.drawChanged(changedGrid);
+};
+
 Sandbox.prototype.moveSand = function(x, y, prevX, prevY) {
   var changedGrid = this.displacement.moveSand(x, y, prevX, prevY);
   changedGrid.mergeSets(this.erosion.run(changedGrid));
