@@ -11,9 +11,11 @@ function CoordSet()
   };
 
   this.deleteCoord = function(x, y) {
-    delete(this.items[x][y]);
-    if ($.isEmptyObject(this.items[x])) 
-      delete(this.items[x]);
+    if (this.items[x]) {
+      delete(this.items[x][y]);
+      if ($.isEmptyObject(this.items[x]))
+        delete(this.items[x]);
+    }
   };
 
   this.each = function(fn) {
@@ -21,7 +23,7 @@ function CoordSet()
     for (var i=0; i<rows.length; i++) {
       var cols = Object.keys(this.items[rows[i]]);
       for (var j=0; j<cols.length; j++) {
-        fn(parseInt(rows[i]), parseInt(cols[j]));
+        fn(parseInt(rows[i], 10), parseInt(cols[j], 10));
       }
     }
   };

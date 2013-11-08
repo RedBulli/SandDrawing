@@ -10,21 +10,29 @@ Grid.prototype.getGrains = function() {
 };
 
 Grid.prototype.setHeight = function(x, y, height) {
-  this.grid[x][y] = height;
+  if (this.isValid(x, y)) {
+    this.grid[x][y] = height;
+  }
 };
 
 Grid.prototype.dropSand = function(x, y, amount) {
-  this.grid[x][y] += amount;
-  if (this.grid[x][y] < 0)
-    this.grid[x][y] = 0;
+  if (this.isValid(x, y)) {
+    this.grid[x][y] += amount;
+    if (this.grid[x][y] < 0)
+      this.grid[x][y] = 0;
+  }
 };
 
 Grid.prototype.getHeight = function(x, y) {
-  return this.grid[x][y];
+  if (this.isValid(x, y)) {
+    return this.grid[x][y];
+  } else {
+    return null;
+  }
 };
 
 Grid.prototype.getHeightFromCoords = function(coords) {
-  return this.grid[coords.x][coords.y];
+  return this.getHeight(coords.x, coords.y);
 };
 
 Grid.prototype.getNeighbours = function(x, y) {
@@ -33,8 +41,7 @@ Grid.prototype.getNeighbours = function(x, y) {
   var neighbours = [];
   for (var i = xVals.lower; i<=xVals.upper; i++) {
     for (var j = yVals.lower; j<=yVals.upper; j++) {
-      if (i===x && j===y) {}
-      else {
+      if (i!==x && j!==y && this.isValid(i, j)) {
         neighbours.push({x: i, y: j, height: this.getHeight(i, j)});
       }
     }
@@ -48,8 +55,7 @@ Grid.prototype.getNeighboursCoordSet = function(x, y) {
   var neighbours = new CoordSet();
   for (var i = xVals.lower; i<=xVals.upper; i++) {
     for (var j = yVals.lower; j<=yVals.upper; j++) {
-      if (i===x && j===y) {}
-      else {
+      if (i!==x && j!==y && this.isValid(i, j)) {
         neighbours.addCoord(i, j);
       }
     }
@@ -63,7 +69,7 @@ Grid.prototype.getInnerCoords = function(x, y, radius) {
   var ceilRadius = Math.ceil(radius);
   for (var i=-floorRadius; i<ceilRadius; i++) {
     for (var j=-floorRadius; j<ceilRadius; j++) {
-      if(Math.sqrt(i*i+j*j)-radius < 0.707) {
+      if(Math.sqrt(i*i+j*j)-radius < 0.707 && this.isValid(x+i, y+j)) {
         coords.addCoord(x+i, y+j);
       }
     }
@@ -77,7 +83,7 @@ Grid.prototype.getOuterNeighbours = function(coords) {
   coords.each(function(x, y) {
     neighbours.mergeSets(_this.getNeighboursCoordSet(x, y));
   });
-  neighbours.minus(coords)
+  neighbours.minus(coords);
   return neighbours;
 };
 
@@ -98,6 +104,12 @@ Grid.prototype.getNeighbourValues = function(value, axis) {
 };
 
 Grid.prototype.distribute = function(giverX, giverY, receiveX, receiveY, amount) {
-  this.grid[giverX][giverY] -= amount;
-  this.grid[receiveX][receiveY] += amount;
+  if (this.isValid(giverX, giverY) && this.isValid(receiveX, receiveY)) {
+    this.grid[giverX][giverY] -= amount;
+    this.grid[receiveX][receiveY] += amount;
+  }
+};
+
+Grid.prototype.isValid = function(x, y) {
+  return x > 0 && x < this.width && y > 0 && y < this.height;
 };

@@ -5,12 +5,10 @@ var Erosion = function(sandbox) {
 Erosion.prototype.run = function(activeGrains) {
   var changedGrains = new CoordSet();
   changedGrains.mergeSets(activeGrains);
-  var _this = this;
+  var erosionFunction = this.applyErosion.bind(this);
   while(!activeGrains.isEmpty()) {
     this.nextActiveGrains = new CoordSet();
-    activeGrains.each(function(x, y) {
-      _this.applyErosion(x, y);
-    });
+    activeGrains.each(erosionFunction);
     changedGrains.mergeSets(this.nextActiveGrains);
     activeGrains = this.nextActiveGrains;
   }
@@ -29,8 +27,8 @@ Erosion.prototype.applyErosion = function(x, y) {
 
 Erosion.prototype.smoothSlope = function(x, y, steepNeighbours) {
   var height = this.sandbox.getHeight(x,y);
-  var distrAmount = this.getAverageHeightDifference(height, steepNeighbours) 
-    * FRACTIONAL_CONSTANT / steepNeighbours.length;
+  var distrAmount = this.getAverageHeightDifference(height, steepNeighbours) *
+    FRACTIONAL_CONSTANT / steepNeighbours.length;
   this.nextActiveGrains.addCoord(x, y);
   for (var i=0; i<steepNeighbours.length; i++) {
     this.sandbox.distribute(x, y, steepNeighbours[i].x, steepNeighbours[i].y, distrAmount);
@@ -73,7 +71,7 @@ Erosion.prototype.getAverageHeightDifference = function(height, neighbours) {
   var n = 0;
   for (var i=0; i<neighbours.length; i++) {
     heightDiffSum += height - neighbours[i].height;
-    n++
+    n++;
   }
   return heightDiffSum / n;
 };
