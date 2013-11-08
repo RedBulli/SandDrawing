@@ -1,97 +1,73 @@
-$(document).ready(function() {
-  TouchUI.init();
-});
-
 var TouchUI = (function(){
-	var currentTouches = [];
+  var currentTouches = []; // Store the fingertip objects by touch id. The array may contain gaps.
+  var canvas;
+  var sandbox;
 
-	function init() {
-		var box = document.getElementById("sandbox");
-		box.addEventListener("touchstart", startTouch);
-		box.addEventListener("touchend", endTouch);
-		box.addEventListener("touchcancel", cancelTouch);
-		box.addEventListener("touchleave", endTouch);
-		box.addEventListener("touchmove", moveTouch);
-	}
+  function init(sandboxObj) {
+    sandbox = sandboxObj;
+    canvas = sandbox.sandCanvas.canvas;
+    canvas.addEventListener("touchstart", startTouch);
+    canvas.addEventListener("touchend", endTouch);
+    canvas.addEventListener("touchcancel", cancelTouch);
+    canvas.addEventListener("touchleave", endTouch);
+    canvas.addEventListener("touchmove", moveTouch);
+    requestAnimationFrame(sandbox.sandCanvas.renderLoop.bind(sandbox.sandCanvas));
+  }
 
-	function startTouch(event) {
-		event.preventDefault();
-		var box = document.getElementById("sandbox");
-		var ctx = box.getContext("2d");
+  function startTouch(event) {
+    event.preventDefault();
 
-		for (var i = 0; i < event.changedTouches.length; i++) {
-			currentTouches.push(event.changedTouches[i]);
-			var left = box.offsetLeft;
-			var top = box.offsetTop;
-			var x = event.changedTouches[i].pageX - left;
-			var y = event.changedTouches[i].pageY - top;
-			console.log("x: " + x);
-			console.log("y: " + y);
-		}
-	}
+    for (var i = 0; i < event.changedTouches.length; i++) {
+      var left = canvas.offsetLeft;
+      var top = canvas.offsetTop;
+      var x = event.changedTouches[i].pageX - left;
+      var y = event.changedTouches[i].pageY - top;
 
-	function moveTouch(event) {
-		event.preventDefault();
-		var box = document.getElementById("sandbox");
-		var ctx = box.getContext("2d");
+      var fingertip = new Fingertip(x, y, FINGERTIP_RADIUS, sandbox);
+      var id = event.changedTouches[i].identifier;
+      currentTouches[id] = fingertip;
+      sandbox.addFingertip(fingertip);
+    }
+  }
 
-		for (var i = 0; i < event.changedTouches.length; i++) {
-			var index = findTouchIndex(event.changedTouches[i].identifier);
-			if (index >= 0) {
-				var left = box.offsetLeft;
-				var top = box.offsetTop;
-				var prevX = currentTouches[index].pageX - left;
-				var prevY = currentTouches[index].pageY - top;
-				var x = event.changedTouches[i].pageX - left;
-				var y = event.changedTouches[i].pageY - top;
-				console.log("x: " + x);
-				console.log("y: " + y);
-				console.log("prevX: " + prevX);
-				console.log("prevY: " + prevY);
+  function moveTouch(event) {
+    event.preventDefault();
 
-				currentTouches[index] = event.changedTouches[i];
-			}
-		}
-	}
+    for (var i = 0; i < event.changedTouches.length; i++) {
+      var id = event.changedTouches[i].identifier;
 
-	function endTouch(event) {
-		event.preventDefault();
-		var box = document.getElementById("sandbox");
-		var ctx = box.getContext("2d");
+      var left = canvas.offsetLeft;
+      var top = canvas.offsetTop;
+      var x = event.changedTouches[i].pageX - left;
+      var y = event.changedTouches[i].pageY - top;
 
-		for (var i = 0; i < event.changedTouches.length; i++) {
-			var index = findTouchIndex(event.changedTouches[i].identifier);
-			if (index >= 0) {
-				var left = box.offsetLeft;
-				var top = box.offsetTop;
-				var prevX = currentTouches[index].pageX - left;
-				var prevY = currentTouches[index].pageY - top;
-				var x = event.changedTouches[i].pageX - left;
-				var y = event.changedTouches[i].pageY - top;
-				console.log("x: " + x);
-				console.log("y: " + y);
-				console.log("prevX: " + prevX);
-				console.log("prevY: " + prevY);
-				currentTouches.splice(index, 1); // Poistetaan kyseinen touch
-			}
-		}
-	}
+      var fingertip = currentTouches[id];
+      fingertip.moveTo(x, y);
+    }
+  }
 
-	function cancelTouch(event) {
-		endTouch(event);
-	}
+  function endTouch(event) {
+    event.preventDefault();
 
-	function findTouchIndex(find) {
-		for (var i = 0; i < currentTouches.length; i++) {
-			var id = currentTouches[i].identifier;
-			if (id == find) {
-				return i
-			}
-		}
-		return -1;
-	}
-	
-	return {
-		init : init
-	};
+    for (var i = 0; i < event.changedTouches.length; i++) {
+      var id = event.changedTouches[i].identifier;
+
+      var left = canvas.offsetLeft;
+      var top = canvas.offsetTop;
+      var x = event.changedTouches[i].pageX - left;
+      var y = event.changedTouches[i].pageY - top;
+
+      var fingertip = currentTouches[id];
+      sandbox.removeFingertip(fingertip);
+      delete currentTouches[id];
+    }
+  }
+
+  function cancelTouch(event) {
+    endTouch(event);
+  }
+
+  return {
+    init : init
+  };
 })();

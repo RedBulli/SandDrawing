@@ -3,7 +3,8 @@ var Sandbox = function(elementId, width, height) {
   this.erosion = new Erosion(this.grid);
   this.displacement = new Displacement(this.grid);
   this.sandCanvas = new SandCanvas(elementId, this.grid);
-  this.ui = new UI(elementId, this);
+  this.fingertips = [];
+  //this.ui = new UI(elementId, this);
 };
 
 Sandbox.prototype.initialize = function() {
@@ -15,6 +16,26 @@ Sandbox.prototype.initialize = function() {
   }
   this.erosion.run(allCoords);
   this.sandCanvas.drawWholeBox();
+};
+
+Sandbox.prototype.addFingertip = function(fingertip) {
+  if (this.fingertips.indexOf(fingertip) === -1) {
+    this.fingertips.push(fingertip);
+  }
+};
+
+Sandbox.prototype.removeFingertip = function(fingertip) {
+  var i = this.fingertips.indexOf(fingertip);
+  if (i !== -1) {
+    this.fingertips.splice(i, 1);
+  }
+};
+
+Sandbox.prototype.isOccupied = function(x, y) {
+  var occupied = this.fingertips.some(function(fingertip) {
+    return fingertip.occupies(x, y);
+  });
+  return occupied;
 };
 
 Sandbox.prototype.dropSand = function(x, y) {
@@ -31,15 +52,14 @@ Sandbox.prototype.dropSand = function(x, y) {
     }
   }
   var changedGrid = this.erosion.run(activeCoords);
-  this.sandCanvas.drawChanged(changedGrid);
+  this.sandCanvas.queueForRedraw(changedGrid);
 };
 
-Sandbox.prototype.pushSand = function(x, y) {
-  var innerCoords = this.grid.getInnerCoords(x,y,2.1);
-  var neighbours = this.grid.getOuterNeighbours(innerCoords);
+Sandbox.prototype.pushSand = function(coords) {
+  var neighbours = this.grid.getOuterNeighbours(coords);
   var totalAmount = 0;
   var _this = this;
-  innerCoords.each(function(x, y) {
+  coords.each(function(x, y) {
     totalAmount += _this.grid.getHeight(x,y);
     _this.grid.setHeight(x, y, 0);
   });
@@ -47,12 +67,14 @@ Sandbox.prototype.pushSand = function(x, y) {
   neighbours.each(function(x, y) {
     _this.grid.dropSand(x, y, distAmount);
   });
-  var changedGrid = this.erosion.run(innerCoords.mergeSets(neighbours));
-  this.sandCanvas.drawChanged(changedGrid);
+  var changedGrid = this.erosion.run(coords.mergeSets(neighbours));
+  this.sandCanvas.queueForRedraw(changedGrid);
 };
 
+/*
 Sandbox.prototype.moveSand = function(x, y, prevX, prevY) {
   var changedGrid = this.displacement.moveSand(x, y, prevX, prevY);
   changedGrid.mergeSets(this.erosion.run(changedGrid));
-  this.graphics.drawChanged(changedGrid);
+  this.graphics.queueForRedraw(changedGrid);
 };
+*/
