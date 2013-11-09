@@ -111,5 +111,5 @@ Grid.prototype.distribute = function(giverX, giverY, receiveX, receiveY, amount)
 };
 
 Grid.prototype.isValid = function(x, y) {
-  return x > 0 && x < this.width && y > 0 && y < this.height;
+  return x >= 0 && x < this.width && y >= 0 && y < this.height;
 };
