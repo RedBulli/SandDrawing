@@ -36,13 +36,11 @@ Grid.prototype.getHeightFromCoords = function(coords) {
 };
 
 Grid.prototype.getNeighbours = function(x, y) {
-  var xVals = this.getNeighbourValues(x, 'x');
-  var yVals = this.getNeighbourValues(y, 'y');
   var neighbours = [];
-  for (var i = xVals.lower; i<=xVals.upper; i++) {
-    for (var j = yVals.lower; j<=yVals.upper; j++) {
-      if (i!==x && j!==y && this.isValid(i, j)) {
-        neighbours.push({x: i, y: j, height: this.getHeight(i, j)});
+  for (var i = -1; i<=1; i++) {
+    for (var j = -1; j<=1; j++) {
+      if (!(i==0 && j==0) && this.isValid(x+i, y+j)) {
+        neighbours.push({x: x+i,y: y+j, height: this.getHeight(x+i, y+j)});
       }
     }
   }
@@ -50,13 +48,11 @@ Grid.prototype.getNeighbours = function(x, y) {
 };
 
 Grid.prototype.getNeighboursCoordSet = function(x, y) {
-  var xVals = this.getNeighbourValues(x, 'x');
-  var yVals = this.getNeighbourValues(y, 'y');
   var neighbours = new CoordSet();
-  for (var i = xVals.lower; i<=xVals.upper; i++) {
-    for (var j = yVals.lower; j<=yVals.upper; j++) {
-      if (i!==x && j!==y && this.isValid(i, j)) {
-        neighbours.addCoord(i, j);
+  for (var i = -1; i<=1; i++) {
+    for (var j = -1; j<=1; j++) {
+      if (!(i==0 && j==0) && this.isValid(x+i, y+j)) {
+        neighbours.addCoord(x+i, y+j);
       }
     }
   }
@@ -94,22 +90,6 @@ Grid.prototype.getOuterNeighbours = function(coords) {
   });
   neighbours.minus(coords);
   return neighbours;
-};
-
-Grid.prototype.getNeighbourValues = function(value, axis) {
-  var maxVal = this.width;
-  if (axis === 'y') {
-    maxVal = this.height;
-  }
-  if (value === 0) {
-    return {lower: value, upper: value+1};
-  } else {
-    if (value === maxVal-1) {
-      return {lower: value-1, upper: value};
-    } else {
-      return {lower: value-1, upper: value+1};
-    }
-  }
 };
 
 Grid.prototype.distribute = function(giverX, giverY, receiveX, receiveY, amount) {

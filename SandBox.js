@@ -66,7 +66,7 @@ Sandbox.prototype.pushSand = function(x1, y1, x2, y2, radius) {
   var distance = Utils.eucledianDistance(x2, y2, x1, y1);
   //Get only the neighbours that are further away than the ending position
   lastNeighbours.filter(function(x,y) {
-    return Utils.eucledianDistance(x1, y1, x, y) > distance;
+    return Utils.eucledianDistance(x1, y1, x, y)-12 > distance;
   });
   var totalAmount = 0;
   var _this = this;
@@ -78,6 +78,8 @@ Sandbox.prototype.pushSand = function(x1, y1, x2, y2, radius) {
   lastNeighbours.each(function(x, y) {
     _this.grid.dropSand(x, y, distAmount);
   });
-  var changedGrid = this.erosion.run(pushedCoords.mergeSets(lastNeighbours));
+  pushedCoords = pushedCoords.mergeSets(this.grid.getOuterNeighbours(pushedCoords));
+  pushedCoords.mergeSets(lastNeighbours);
+  var changedGrid = this.erosion.run(pushedCoords);
   this.sandCanvas.queueForRedraw(changedGrid);
 };

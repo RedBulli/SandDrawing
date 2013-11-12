@@ -5,15 +5,14 @@ var Fingertip = function(x, y, radius, sandbox) {
   this.prevY;
   this.radius = radius;
   this.sandbox = sandbox;
-  this.sandbox.pushSand(x, y, x, y, this.radius);
 };
 
 Fingertip.prototype.moveTo = function(x, y) {
   this.prevX = this.x;
   this.prevY = this.y;
-  this.sandbox.pushSand(this.prevX, this.prevY, x, y, this.radius);
   this.x = x;
   this.y = y;
+  this.sandbox.pushSand(this.prevX, this.prevY, x, y, this.radius);
 };
 
 Fingertip.prototype.occupies = function(targetX, targetY) {
