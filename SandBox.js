@@ -1,10 +1,11 @@
 var Sandbox = function(elementId, width, height) {
+  document.getElementById(elementId).width = 1000;
+  document.getElementById(elementId).height = 1000;
   this.grid = new Grid(width, height);
-  this.erosion = new Erosion(this.grid);
+  this.erosion = new Erosion(this);
   this.displacement = new Displacement(this.grid);
   this.sandCanvas = new SandCanvas(elementId, this.grid);
   this.fingertips = [];
-  //this.ui = new UI(elementId, this);
 };
 
 Sandbox.prototype.initialize = function() {
@@ -26,6 +27,10 @@ Sandbox.prototype.addFingertip = function(fingertip) {
 
 Sandbox.prototype.removeFingertip = function(fingertip) {
   var i = this.fingertips.indexOf(fingertip);
+  var changedGrid = this.grid.getInnerCoords(fingertip.x, fingertip.y, fingertip.radius);
+  changedGrid.mergeSets(this.grid.getOuterNeighbours(changedGrid));
+  this.erosion.run(changedGrid);
+  this.sandCanvas.queueForRedraw(changedGrid);
   if (i !== -1) {
     this.fingertips.splice(i, 1);
   }
@@ -55,27 +60,24 @@ Sandbox.prototype.dropSand = function(x, y) {
   this.sandCanvas.queueForRedraw(changedGrid);
 };
 
-Sandbox.prototype.pushSand = function(coords, prevCoords) {
-  var neighbours = this.grid.getOuterNeighbours(coords);
-  neighbours = neighbours.minus(prevCoords);	  // prevent sand from falling behind the finger
+Sandbox.prototype.pushSand = function(x1, y1, x2, y2, radius) {
+  var pushedCoords =  this.grid.getInnerCoordsFromPath(x1, y1, x2, y2, radius);
+  var lastNeighbours = this.grid.getOuterNeighbours(this.grid.getInnerCoords(x2,y2, radius));
+  var distance = Utils.eucledianDistance(x2, y2, x1, y1);
+  //Get only the neighbours that are further away than the ending position
+  lastNeighbours.filter(function(x,y) {
+    return Utils.eucledianDistance(x1, y1, x, y) > distance;
+  });
   var totalAmount = 0;
   var _this = this;
-  coords.each(function(x, y) {
+  pushedCoords.each(function(x, y) {
     totalAmount += _this.grid.getHeight(x,y);
     _this.grid.setHeight(x, y, 0);
   });
-  var distAmount = totalAmount / neighbours.size();
-  neighbours.each(function(x, y) {
+  var distAmount = totalAmount / lastNeighbours.size();
+  lastNeighbours.each(function(x, y) {
     _this.grid.dropSand(x, y, distAmount);
   });
-  var changedGrid = this.erosion.run(coords.mergeSets(neighbours));
+  var changedGrid = this.erosion.run(pushedCoords.mergeSets(lastNeighbours));
   this.sandCanvas.queueForRedraw(changedGrid);
 };
-
-/*
-Sandbox.prototype.moveSand = function(x, y, prevX, prevY) {
-  var changedGrid = this.displacement.moveSand(x, y, prevX, prevY);
-  changedGrid.mergeSets(this.erosion.run(changedGrid));
-  this.graphics.queueForRedraw(changedGrid);
-};
-*/

@@ -26,12 +26,12 @@ Erosion.prototype.applyErosion = function(x, y) {
 };
 
 Erosion.prototype.smoothSlope = function(x, y, steepNeighbours) {
-  var height = this.sandbox.getHeight(x,y);
+  var height = this.sandbox.grid.getHeight(x,y);
   var distrAmount = this.getAverageHeightDifference(height, steepNeighbours) *
     FRACTIONAL_CONSTANT / steepNeighbours.length;
   this.nextActiveGrains.addCoord(x, y);
   for (var i=0; i<steepNeighbours.length; i++) {
-    this.sandbox.distribute(x, y, steepNeighbours[i].x, steepNeighbours[i].y, distrAmount);
+    this.sandbox.grid.distribute(x, y, steepNeighbours[i].x, steepNeighbours[i].y, distrAmount);
     this.nextActiveGrains.addCoord(steepNeighbours[i].x, steepNeighbours[i].y);
   }
 };
@@ -39,7 +39,7 @@ Erosion.prototype.smoothSlope = function(x, y, steepNeighbours) {
 
 Erosion.prototype.hasSlopes = function(height, neighbours) {
   for (var i=0; i<neighbours.length; i++) {
-    if (this.isTooSteep(height, this.sandbox.getHeightFromCoords(neighbours[i]))) {
+    if (this.isTooSteep(height, this.sandbox.grid.getHeightFromCoords(neighbours[i]))) {
       return true;
     }
   }
@@ -56,11 +56,12 @@ Erosion.prototype.getSlope = function(height, neighbourHeight) {
 
 Erosion.prototype.getTooSteepNeighbours = function(x, y) {
   var steepNeighbours = [];
-  var height = this.sandbox.getHeight(x, y);
-  var neighbours = this.sandbox.getNeighbours(x, y);
+  var height = this.sandbox.grid.getHeight(x, y);
+  var neighbours = this.sandbox.grid.getNeighbours(x, y);
   for (var i=0; i<neighbours.length; i++) {
     if(this.isTooSteep(height, neighbours[i].height)) {
-      steepNeighbours.push(neighbours[i]);
+      if(!this.sandbox.isOccupied(neighbours[i].x, neighbours[i].y))
+        steepNeighbours.push(neighbours[i]);
     }
   }
   return steepNeighbours;

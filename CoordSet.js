@@ -56,4 +56,12 @@ function CoordSet()
     return this;
   };
 
+  this.filter = function(compFunc) {
+    var _this = this;
+    this.each(function(x,y) {
+      if(!compFunc(x,y))
+        _this.deleteCoord(x,y);
+    });
+  };
+
 }

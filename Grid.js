@@ -69,11 +69,20 @@ Grid.prototype.getInnerCoords = function(x, y, radius) {
   var ceilRadius = Math.ceil(radius);
   for (var i=-floorRadius; i<ceilRadius; i++) {
     for (var j=-floorRadius; j<ceilRadius; j++) {
-      if(Math.sqrt(i*i+j*j)-radius < 0.707 && this.isValid(x+i, y+j)) {
+      if(Utils.isInsideCircle(x,y,x+i,y+j,radius) && this.isValid(x+i, y+j)) {
         coords.addCoord(x+i, y+j);
       }
     }
   }
+  return coords;
+};
+
+Grid.prototype.getInnerCoordsFromPath = function(x1, y1, x2, y2, radius) {
+  var coords = new CoordSet();
+  var _this = this;
+  Utils.applyBetweenPoints(x1,y1,x2,y2, function(x, y) {
+    coords.mergeSets(_this.getInnerCoords(x,y, radius));
+  });
   return coords;
 };
 
