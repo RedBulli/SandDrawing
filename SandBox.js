@@ -55,8 +55,9 @@ Sandbox.prototype.dropSand = function(x, y) {
   this.sandCanvas.queueForRedraw(changedGrid);
 };
 
-Sandbox.prototype.pushSand = function(coords) {
+Sandbox.prototype.pushSand = function(coords, prevCoords) {
   var neighbours = this.grid.getOuterNeighbours(coords);
+  neighbours = neighbours.minus(prevCoords);	  // prevent sand from falling behind the finger
   var totalAmount = 0;
   var _this = this;
   coords.each(function(x, y) {
