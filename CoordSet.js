@@ -7,7 +7,11 @@ function CoordSet()
     if (!this.items.hasOwnProperty(x)) {
       this.items[x] = {};
     }
-    this.items[x][y] = undefined;
+    this.items[x][y] = true;
+  };
+
+  this.contains = function(x, y) {
+    return this.items[x] ? (this.items[x][y] ? true : false) : false;
   };
 
   this.deleteCoord = function(x, y) {

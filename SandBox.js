@@ -27,7 +27,7 @@ Sandbox.prototype.addFingertip = function(fingertip) {
 
 Sandbox.prototype.removeFingertip = function(fingertip) {
   var i = this.fingertips.indexOf(fingertip);
-  var changedGrid = this.grid.getInnerCoords(fingertip.x, fingertip.y, fingertip.radius);
+  var changedGrid = fingertip.occupiedCoords;
   changedGrid.mergeSets(this.grid.getOuterNeighbours(changedGrid));
   this.erosion.run(changedGrid);
   this.sandCanvas.queueForRedraw(changedGrid);
@@ -60,26 +60,19 @@ Sandbox.prototype.dropSand = function(x, y) {
   this.sandCanvas.queueForRedraw(changedGrid);
 };
 
-Sandbox.prototype.pushSand = function(x1, y1, x2, y2, radius) {
-  var pushedCoords =  this.grid.getInnerCoordsFromPath(x1, y1, x2, y2, radius);
-  var lastNeighbours = this.grid.getOuterNeighbours(this.grid.getInnerCoords(x2,y2, radius));
-  var distance = Utils.eucledianDistance(x2, y2, x1, y1);
-  //Get only the neighbours that are further away than the ending position
-  lastNeighbours.filter(function(x,y) {
-    return Utils.eucledianDistance(x1, y1, x, y)-12 > distance;
-  });
-  var totalAmount = 0;
+Sandbox.prototype.pushSand = function(fingertip) {
+  var x0 = fingertip.x;
+  var y0 = fingertip.y;
   var _this = this;
-  pushedCoords.each(function(x, y) {
-    totalAmount += _this.grid.getHeight(x,y);
-    _this.grid.setHeight(x, y, 0);
+  var changed = new CoordSet();
+  fingertip.occupiedCoords.each(function(x, y) {
+    var angle = Math.atan2(y - y0, x - x0);
+    var r = Math.round(fingertip.radius - Utils.eucledianDistance(x0, y0, x, y) + 1);
+    var toX = x + Math.round(Math.cos(angle) * r);
+    var toY = y + Math.round(Math.sin(angle) * r);
+    _this.grid.distribute(x, y, toX, toY, _this.grid.getHeight(x,y));
+    changed.addCoord(toX, toY);
   });
-  var distAmount = totalAmount / lastNeighbours.size();
-  lastNeighbours.each(function(x, y) {
-    _this.grid.dropSand(x, y, distAmount);
-  });
-  pushedCoords = pushedCoords.mergeSets(this.grid.getOuterNeighbours(pushedCoords));
-  pushedCoords.mergeSets(lastNeighbours);
-  var changedGrid = this.erosion.run(pushedCoords);
+  var changedGrid = this.erosion.run(fingertip.occupiedCoords.mergeSets(changed));
   this.sandCanvas.queueForRedraw(changedGrid);
 };
