@@ -17,12 +17,9 @@ Erosion.prototype.run = function(activeGrains) {
 
 Erosion.prototype.applyErosion = function(x, y) {
   var steepNeighbours = this.getTooSteepNeighbours(x, y);
-  var rerun = false;
   if (steepNeighbours.length > 0) {
     this.smoothSlope(x, y, steepNeighbours);
-    rerun = true;
   }
-  return rerun;
 };
 
 Erosion.prototype.smoothSlope = function(x, y, steepNeighbours) {
