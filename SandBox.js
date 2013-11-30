@@ -1,17 +1,17 @@
-var Sandbox = function(elementId, width, height) {
-  document.getElementById(elementId).width = 1000;
-  document.getElementById(elementId).height = 1000;
-  this.grid = new Grid(width, height);
+var Sandbox = function(canvas) {
+  this.width = canvas.width;
+  this.height = canvas.height;
+  this.grid = new Grid(this.width, this.height);
   this.erosion = new Erosion(this);
   this.displacement = new Displacement(this.grid);
-  this.sandCanvas = new SandCanvas(elementId, this.grid);
+  this.sandCanvas = new SandCanvas(canvas, this.grid);
   this.fingertips = [];
 };
 
 Sandbox.prototype.initialize = function() {
   var allCoords = new CoordSet();
-  for (var i=0;i<WIDTH;i++) {
-    for (var j=0;j<HEIGHT;j++) {
+  for (var i=0;i<this.width;i++) {
+    for (var j=0;j<this.height;j++) {
       allCoords.addCoord(i,j);
     }
   }
