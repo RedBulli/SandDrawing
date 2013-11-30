@@ -73,6 +73,5 @@ Sandbox.prototype.pushSand = function(fingertip) {
     _this.grid.distribute(x, y, toX, toY, _this.grid.getHeight(x,y));
     changed.addCoord(toX, toY);
   });
-  var changedGrid = this.erosion.run(fingertip.occupiedCoords.mergeSets(changed));
-  this.sandCanvas.queueForRedraw(changedGrid);
+  return changed;
 };
