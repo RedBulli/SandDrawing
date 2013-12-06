@@ -1,23 +1,149 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>Sand drawing platform</title>
-  <script src="jquery.js"></script>
-  <script src="constants.js"></script>
-  <script src="Utils.js"></script>
-  <script src="TurbulentWaveFilter.js"></script>
-  <script src="CoordSet.js"></script>
-  <script src="Grid.js"></script>
-  <script src="Erosion.js"></script>
-  <script src="Displacement.js"></script>
-  <script src="SandCanvas.js"></script>
-  <script src="Fingertip.js"></script>
-  <script src="SandBox.js"></script>
-  <script src="TouchUI.js"></script>
-  <script src="main.js"></script>
+<meta charset="utf-8">
+<title>SandDrawing</title>
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="script.js"></script>
+<!-- vertex shader -->
+<script id="2d-vertex-shader" type="x-shader/x-vertex">
+  attribute vec2 a_position;
+  attribute vec2 a_texCoord;
+
+  uniform vec2 u_resolution;
+  uniform float u_flipY;
+
+  varying vec2 v_texCoord;
+
+  void main() {
+    // convert the rectangle from pixels to 0.0 to 1.0
+    vec2 zeroToOne = a_position / u_resolution;
+
+    // convert from 0->1 to 0->2
+    vec2 zeroToTwo = zeroToOne * 2.0;
+
+    // convert from 0->2 to -1->+1 (clipspace)
+    vec2 clipSpace = zeroToTwo - 1.0;
+
+    gl_Position = vec4(clipSpace * vec2(1, u_flipY), 0, 1);
+
+    // pass the texCoord to the fragment shader
+    // The GPU will interpolate this value between points.
+    v_texCoord = a_texCoord;
+  }
+</script>
+<script id="erosion-shader" type="x-shader/x-fragment">
+  precision mediump float;
+
+  // our texture
+  uniform sampler2D u_image;
+  uniform vec2 u_textureSize;
+  uniform float u_stage;
+  uniform vec2 u_mouse;
+
+  // the texCoords passed in from the vertex shader.
+  varying vec2 v_texCoord;
+
+  vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
+  vec2 mouseCs = u_mouse.xy * onePixel;
+  vec3 grains = texture2D(u_image, v_texCoord).xyz;
+  vec3 neighbors[8];
+
+  vec3 getSandData(float xoff, float yoff) {
+    return texture2D(u_image, v_texCoord + vec2(onePixel.x*xoff, onePixel.y*yoff)).xyz;
+  }
+
+  bool isTooSteep(float x, float y) {
+    if (x > y) {
+      return atan((x-y)*2.0) > 1.0;
+    }
+    else {
+      return false;
+    }
+  }
+
+  void getNeighbors() {
+    neighbors[0] = getSandData(-1.0, -1.0);
+    neighbors[1] = getSandData(-1.0, 0.0);
+    neighbors[2] = getSandData(-1.0, 1.0);
+    neighbors[3] = getSandData(0.0, -1.0);
+    neighbors[4] = getSandData(0.0, 1.0);
+    neighbors[5] = getSandData(1.0, -1.0);
+    neighbors[6] = getSandData(1.0, 0.0);
+    neighbors[7] = getSandData(1.0, 1.0);
+  }
+
+  void receiveFromLastRound() {
+    float receiveAmount = 0.0;
+    for (int i=0;i<8;i++) {
+      if (isTooSteep(neighbors[i].z, grains.x)) {
+        receiveAmount += neighbors[i].y;
+      }
+    }
+    grains.x += receiveAmount;
+  }
+
+  float getDistributeAmount(float neighborValue) {
+    float distrAmount = 0.0;
+    if (isTooSteep(grains.x, neighborValue)) {
+      return grains.x - neighborValue;
+    }
+    else {
+      return 0.0;
+    }
+  }
+
+  float getTotalDistributeAmount() {
+    float n = 0.0;
+    float distrAmount;
+    float totalDistrAmount = 0.0;
+    for (int i=0;i<8;i++) {
+      distrAmount = getDistributeAmount(neighbors[i].x);
+      if (distrAmount > 0.0) {
+        n += 1.0;
+        totalDistrAmount += distrAmount;
+      }
+    }
+    if (n > 0.0) {
+      grains.x -= totalDistrAmount / n;
+      return totalDistrAmount / n;
+    }
+    else {
+      return 0.0;
+    }
+  }
+
+  void main() {
+    if (u_stage == -2.0) {
+      float value = texture2D(u_image, v_texCoord).x;
+      gl_FragColor = vec4(value, 0.0, 0.0, 0.0);
+    }
+    else if (u_stage == 0.0) {
+      if(abs(mouseCs.x-v_texCoord.x) < 0.01 && abs(mouseCs.y-v_texCoord.y) < 0.01) {
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.5);
+      }
+      else {
+        gl_FragColor = texture2D(u_image, v_texCoord);
+      }
+    }
+    else if (u_stage == 1.0) {
+      float prevValue = grains.x;
+      getNeighbors();
+      receiveFromLastRound();
+      float distribute = getTotalDistributeAmount();
+      if (distribute == 0.0) {
+        prevValue = 0.0;
+      }
+      gl_FragColor = vec4(grains.x, distribute, prevValue, 0.5);
+    }
+    else {
+      float value = texture2D(u_image, v_texCoord).x;
+      gl_FragColor = vec4(1.0-value, 1.0-value, 1.0-value, 0.5);
+    }
+  }
+</script>
 </head>
 <body>
-  <canvas id="sandbox" width="1000" height="500"></canvas>
+  <canvas id="canvas"></canvas>
 </body>
 </html>
