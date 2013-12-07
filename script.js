@@ -102,7 +102,7 @@ function render() {
   // Set a rectangle the same size as the image.
   setRectangle( gl, 0, 0, WIDTH, HEIGHT);
 
-  var mouseCoords = {x: 200.0, y: 200.0};
+  var mouseCoords = {};
   document.addEventListener('mousemove', function(evt) {
     mouseCoords.x = evt.clientX - canvas.offsetLeft;
     mouseCoords.y = evt.clientY - canvas.offsetTop;
