@@ -104,8 +104,8 @@ function render() {
 
   var mouseCoords = {x: 200.0, y: 200.0};
   document.addEventListener('mousemove', function(evt) {
-    mouseCoords.x = evt.clientX;
-    mouseCoords.y = evt.clientY;
+    mouseCoords.x = evt.clientX - canvas.offsetLeft;
+    mouseCoords.y = evt.clientY - canvas.offsetTop;
   }, false);
   // start with the original image
   gl.bindTexture(gl.TEXTURE_2D, originalImageTexture);
