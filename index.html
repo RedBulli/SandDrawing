@@ -127,19 +127,21 @@
       else if (distance == 15.0) {
         //float angle = atan2(y - y0, x - x0);
         //Jos on lähin naapuri mousesta, niin sit hae hiekat valilta
-        
+        //Ja siirra naihin koordinaatteihin
       } else {
         gl_FragColor = texture2D(u_image, v_texCoord);
       }
     }
     else if (u_stage == 1.0) {
-      float prevValue = grains.x;
       getNeighbors();
       receiveFromLastRound();
+      float prevValue = grains.x;
       float distribute = getTotalDistributeAmount();
       if (distribute == 0.0) {
         prevValue = 0.0;
       }
+      // x = amount of sand, y = amount to be distributed to all receivers
+      // z = previous amout that calculated the distribution
       gl_FragColor = vec4(grains.x, distribute, prevValue, 0.5);
     }
     else {
