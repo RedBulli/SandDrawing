@@ -119,12 +119,16 @@
       gl_FragColor = vec4(value, 0.0, 0.0, 0.0);
     }
     else if (u_stage == 0.0) {
-      if(sqrt(pow(mouseCs.x-v_texCoord.x, 2.0) + pow(mouseCs.y-v_texCoord.y, 2.0)) < 0.01) {
+      float distance = floor(sqrt(pow((mouseCs.x-v_texCoord.x)/onePixel.x, 2.0) + pow((mouseCs.y-v_texCoord.y)/onePixel.y, 2.0)));
+      if(distance < 15.0) {
         gl_FragColor = texture2D(u_image, v_texCoord);
         gl_FragColor.x = 0.0;
       }
-      else {
+      else if (distance == 15.0) {
+        //float angle = atan2(y - y0, x - x0);
         //Jos on lähin naapuri mousesta, niin sit hae hiekat valilta
+        
+      } else {
         gl_FragColor = texture2D(u_image, v_texCoord);
       }
     }

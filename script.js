@@ -3,7 +3,7 @@
 *  Licensed under a BSD license. */
 
 var WIDTH = 1024;
-var HEIGHT = 1024;
+var HEIGHT = 512;
 window.onload = start;
 
 function start() {
