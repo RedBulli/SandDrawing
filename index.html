@@ -86,7 +86,7 @@
   float getDistributeAmount(float neighborValue) {
     float distrAmount = 0.0;
     if (isTooSteep(grains.x, neighborValue)) {
-      return grains.x - neighborValue;
+      return (grains.x - neighborValue) * 0.2;
     }
     else {
       return 0.0;
