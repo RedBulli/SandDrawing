@@ -89,6 +89,7 @@ function render() {
   var flipYLocation = gl.getUniformLocation(program, "u_flipY");
   var stageLocation = gl.getUniformLocation(program, "u_stage");
   var mouseLocation = gl.getUniformLocation(program, "u_mouse");
+  var prevMouseLocation = gl.getUniformLocation(program, "u_prev_mouse");
 
   // set the size of the image
   gl.uniform2f(textureSizeLocation, WIDTH, HEIGHT);
@@ -102,8 +103,9 @@ function render() {
   // Set a rectangle the same size as the image.
   setRectangle( gl, 0, 0, WIDTH, HEIGHT);
 
-  var mouseCoords = {};
+  var mouseCoords = {prev: {x: null, y: null}};
   document.addEventListener('mousemove', function(evt) {
+    mouseCoords.prev = {x: mouseCoords.x, y: mouseCoords.y};
     mouseCoords.x = evt.clientX - canvas.offsetLeft;
     mouseCoords.y = evt.clientY - canvas.offsetTop;
   }, false);
@@ -112,20 +114,32 @@ function render() {
 
   requestAnimationFrame(drawEffects);
   var first = true;
-
+  var count = 0;
   function drawEffects() {
-
+    count = count % 2;
     // don't y flip images while drawing to the textures
     gl.uniform1f(flipYLocation, 1);
     
     gl.uniform2f(mouseLocation, mouseCoords.x, mouseCoords.y);
+    gl.uniform2f(prevMouseLocation, mouseCoords.prev.x, mouseCoords.prev.y);
 
     // loop through each effect we want to apply.
-    var count = 0;
     var iters = 2;
     if (first) {
       iters = 3;
     }
+
+    applyBetweenPoints(mouseCoords.x, mouseCoords.y, mouseCoords.prev.x, mouseCoords.prev.y, function(x, y) {
+      gl.uniform2f(mouseLocation, x, y);
+      gl.uniform1f(stageLocation, 0);
+      setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
+      draw();
+      // for the next draw, use the texture we just rendered to.
+      gl.bindTexture(gl.TEXTURE_2D, textures[count % 2]);
+      // increment count so we use the other texture next time.
+      ++count;
+    });
+
     for (var ii = 0; ii < iters; ++ii) {
       if (first) {
         gl.uniform1f(stageLocation, -2);
@@ -187,3 +201,19 @@ function setRectangle(gl, x, y, width, height) {
      x2, y1,
      x2, y2]), gl.STATIC_DRAW);
 }
+
+function applyBetweenPoints(x0, y0, x1, y1, func) {
+    if (x0 == null || y0 == null || x1 == null || y1 == null) {
+      return;
+    }
+    var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    var err = (dx>dy ? dx : -dy)/2;
+    while (true) {
+      func(x0,y0);
+      if (x0 === x1 && y0 === y1) break;
+      var e2 = err;
+      if (e2 > -dx) { err -= dy; x0 += sx; }
+      if (e2 < dy) { err += dx; y0 += sy; }
+    }
+  }
