@@ -46,7 +46,7 @@
 
   vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
   vec2 mouseCs = u_mouse.xy * onePixel;
-  vec3 grains = texture2D(u_image, v_texCoord).xyz;
+  vec3 grains;
   vec3 neighbors[8];
 
   vec3 getSandData(float xoff, float yoff) {
@@ -114,6 +114,7 @@
   }
 
   void main() {
+    grains = texture2D(u_image, v_texCoord).xyz;
     if (u_stage == -2.0) {
       float value = texture2D(u_image, v_texCoord).x;
       gl_FragColor = vec4(value, 0.0, 0.0, 0.0);
