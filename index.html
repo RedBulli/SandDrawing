@@ -123,9 +123,35 @@
     }
   }
 
+  float getDistanceFromOrigin(vec2 vector) {
+    return sqrt(pow(vector.x, 2.0) + pow(vector.y, 2.0));
+  }
+
   bool isReceiving(vec2 coord) {
-    return sqrt(pow(u_mouse.x - coord.x, 2.0) + pow(u_mouse.y - coord.y, 2.0)) < 
-      sqrt(pow(u_prev_mouse.x - coord.x, 2.0) + pow(u_prev_mouse.y - coord.y, 2.0));
+    return getDistanceFromOrigin(u_mouse-coord) < getDistanceFromOrigin(u_prev_mouse-coord);
+  }
+
+  bool isClosestReceiving(vec2 receivCoord, vec2 giveCoord) {
+    float compDistance = getDistanceFromOrigin(receivCoord - giveCoord);
+    if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(0, 1))) {
+      return false;
+    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(0, -1))) {
+      return false;
+    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(1, -1))) {
+      return false;
+    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(1, 0))) {
+      return false;
+    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(1, 1))) {
+      return false;
+    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(-1, -1))) {
+      return false;
+    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(-1, 0))) {
+      return false;
+    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(-1, 1))) {
+      return false;
+    } else {
+      return true;
+    }
   }
 
   float getDisplacementAmount() {
@@ -133,16 +159,20 @@
     float count = 0.0;
     for (float i=0.0;i<15.0;i++) {
       for (float j=0.0;j<15.0;j++) {
-        float distance = floor(sqrt(pow(i, 2.0) + pow(j, 2.0)));
+        float distance = floor(getDistanceFromOrigin(vec2(i,j)));
         if (distance < 15.0) {
-          amount +=  getSandDataFromCoords(u_mouse+vec2(i, j));
-          amount +=  getSandDataFromCoords(u_mouse+vec2(i, -j));
-          amount +=  getSandDataFromCoords(u_mouse+vec2(-i, j));
-          amount +=  getSandDataFromCoords(u_mouse+vec2(-i, -j));
-        }
-        else if (distance == 15.0) {
-          if (isReceiving(u_mouse+vec2(i, j))) {
-            count += 4.0;
+          if (isClosestReceiving(v_texCoord/onePixel, u_mouse+vec2(i, j))) {
+            amount += getSandDataFromCoords(u_mouse+vec2(i, j));
+            count++;
+          } else if (isClosestReceiving(v_texCoord/onePixel, u_mouse+vec2(i, -j))) {
+            amount += getSandDataFromCoords(u_mouse+vec2(i, -j));
+            count++;
+          } else if (isClosestReceiving(v_texCoord/onePixel, u_mouse+vec2(-i, j))) {
+            amount += getSandDataFromCoords(u_mouse+vec2(-i, j));
+            count++;
+          } else if (isClosestReceiving(v_texCoord/onePixel, u_mouse+vec2(-i, -j))) {
+            amount += getSandDataFromCoords(u_mouse+vec2(-i, -j));
+            count++;
           }
         }
       }
