@@ -103,42 +103,48 @@ function render() {
   // Set a rectangle the same size as the image.
   setRectangle( gl, 0, 0, WIDTH, HEIGHT);
 
-  var mouseCoords = {prev: {x: null, y: null}};
+  var mouseCoords = {};
   document.addEventListener('mousemove', function(evt) {
-    mouseCoords.prev = {x: mouseCoords.x, y: mouseCoords.y};
     mouseCoords.x = evt.clientX - canvas.offsetLeft;
     mouseCoords.y = evt.clientY - canvas.offsetTop;
   }, false);
   // start with the original image
   gl.bindTexture(gl.TEXTURE_2D, originalImageTexture);
-
-  requestAnimationFrame(drawEffects);
   var first = true;
   var count = 0;
+  requestAnimationFrame(drawEffects);
   function drawEffects() {
     count = count % 2;
     // don't y flip images while drawing to the textures
     gl.uniform1f(flipYLocation, 1);
-    
-    gl.uniform2f(mouseLocation, mouseCoords.x, mouseCoords.y);
-    gl.uniform2f(prevMouseLocation, mouseCoords.prev.x, mouseCoords.prev.y);
-
     // loop through each effect we want to apply.
     var iters = 2;
     if (first) {
       iters = 3;
     }
-
-    applyBetweenPoints(mouseCoords.x, mouseCoords.y, mouseCoords.prev.x, mouseCoords.prev.y, function(x, y) {
-      gl.uniform2f(mouseLocation, x, y);
-      gl.uniform1f(stageLocation, 0);
-      setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
-      draw();
-      // for the next draw, use the texture we just rendered to.
-      gl.bindTexture(gl.TEXTURE_2D, textures[count % 2]);
-      // increment count so we use the other texture next time.
-      ++count;
-    });
+    if (mouseCoords.x) {
+      mouseCoords.stat = {x: mouseCoords.x, y: mouseCoords.y};
+      if (!mouseCoords.prev) {
+        mouseCoords.prev = {x: mouseCoords.x, y: mouseCoords.y};
+      } else {
+        gl.uniform1f(stageLocation, 0);
+        applyBetweenPoints(mouseCoords.prev.x, mouseCoords.prev.y, mouseCoords.stat.x, mouseCoords.stat.y, function(x, y) {
+          if (mouseCoords.prev.x != x || mouseCoords.prev.y != y) {
+            gl.uniform2f(mouseLocation, x, y);
+            gl.uniform2f(prevMouseLocation, mouseCoords.prev.x, mouseCoords.prev.y);
+            mouseCoords.prev.x = x;
+            mouseCoords.prev.y = y;
+            setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
+            draw();
+            // for the next draw, use the texture we just rendered to.
+            gl.bindTexture(gl.TEXTURE_2D, textures[count % 2]);
+            // increment count so we use the other texture next time.
+            ++count;
+          }
+          
+        });
+      }
+    }
 
     for (var ii = 0; ii < iters; ++ii) {
       if (first) {
@@ -205,15 +211,20 @@ function setRectangle(gl, x, y, width, height) {
 function applyBetweenPoints(x0, y0, x1, y1, func) {
     if (x0 == null || y0 == null || x1 == null || y1 == null) {
       return;
+    } else if (x0 == x1 && y0 == y1){
+      return;
+    } else {
+      var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+      var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+      var err = (dx>dy ? dx : -dy)/2;
+      while (true) {
+        if (x0 === x1 && y0 === y1) break;
+        func(x0,y0);
+        
+        var e2 = err;
+        if (e2 > -dx) { err -= dy; x0 += sx; }
+        if (e2 < dy) { err += dx; y0 += sy; }
+      }
     }
-    var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-    var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-    var err = (dx>dy ? dx : -dy)/2;
-    while (true) {
-      func(x0,y0);
-      if (x0 === x1 && y0 === y1) break;
-      var e2 = err;
-      if (e2 > -dx) { err -= dy; x0 += sx; }
-      if (e2 < dy) { err += dx; y0 += sy; }
-    }
+
   }

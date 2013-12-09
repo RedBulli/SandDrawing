@@ -123,6 +123,11 @@
     }
   }
 
+  bool isReceiving(vec2 coord) {
+    return sqrt(pow(u_mouse.x - coord.x, 2.0) + pow(u_mouse.y - coord.y, 2.0)) < 
+      sqrt(pow(u_prev_mouse.x - coord.x, 2.0) + pow(u_prev_mouse.y - coord.y, 2.0));
+  }
+
   float getDisplacementAmount() {
     float amount = 0.0;
     float count = 0.0;
@@ -136,7 +141,9 @@
           amount +=  getSandDataFromCoords(u_mouse+vec2(-i, -j));
         }
         else if (distance == 15.0) {
-          count += 4.0;
+          if (isReceiving(u_mouse+vec2(i, j))) {
+            count += 4.0;
+          }
         }
       }
     }
@@ -156,7 +163,7 @@
         gl_FragColor = texture2D(u_image, v_texCoord);
         gl_FragColor.x = 0.0;
       }
-      else if (distance == 15.0) {
+      else if (distance == 15.0 && isReceiving(v_texCoord/onePixel)) {
         gl_FragColor.x += getDisplacementAmount();
       } else {
         gl_FragColor = texture2D(u_image, v_texCoord);
@@ -176,7 +183,7 @@
     }
     else {
       float value = texture2D(u_image, v_texCoord).x;
-      gl_FragColor = vec4(1.0-value, 1.0-value, 1.0-value, 0.5);
+      gl_FragColor = vec4(1.0-value, 1.0, 1.0, 0.5);
     }
   }
 </script>
