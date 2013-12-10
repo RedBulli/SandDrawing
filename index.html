@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <title>SandDrawing</title>
 <script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="Fingertip.js"></script>
+<script type="text/javascript" src="TouchUI.js"></script>
 <script type="text/javascript" src="script.js"></script>
 <!-- vertex shader -->
 <script id="2d-vertex-shader" type="x-shader/x-vertex">
@@ -41,19 +43,14 @@
   uniform float u_stage;
   uniform vec2 u_mouse;
   uniform vec2 u_prev_mouse;
+  uniform vec2 u_touchlocations[2];
 
   // the texCoords passed in from the vertex shader.
   varying vec2 v_texCoord;
 
   vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
-  vec2 mouseCs = u_mouse.xy * onePixel;
   vec3 grains;
   vec3 neighbors[8];
-  float angle;
-
-  float getMouseAngle() {
-    return atan(u_mouse.y - u_prev_mouse.y, u_mouse.x - u_prev_mouse.x);
-  }
 
   vec3 getSandData(float xoff, float yoff) {
     return texture2D(u_image, v_texCoord + vec2(onePixel.x*xoff, onePixel.y*yoff)).xyz;
@@ -127,11 +124,12 @@
     return sqrt(pow(vector.x, 2.0) + pow(vector.y, 2.0));
   }
 
-  bool isReceiving(vec2 coord) {
-    return getDistanceFromOrigin(u_mouse-coord) < getDistanceFromOrigin(u_prev_mouse-coord);
+  bool isReceiving(vec2 coord, vec2 mouseCoord, vec2 prevMouseCoord) {
+    return getDistanceFromOrigin(mouseCoord-coord) < getDistanceFromOrigin(prevMouseCoord-coord);
   }
 
   bool isClosestReceiving(vec2 receivCoord, vec2 giveCoord) {
+    return true;
     float compDistance = getDistanceFromOrigin(receivCoord - giveCoord);
     if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(0, 1))) {
       return false;
@@ -154,23 +152,23 @@
     }
   }
 
-  float getDisplacementAmount() {
+  float getDisplacementAmount(vec2 nextMouse) {
     float amount = 0.0;
     float count = 0.0;
     for (float i=0.0;i<15.0;i++) {
       for (float j=0.0;j<15.0;j++) {
         float distance = floor(getDistanceFromOrigin(vec2(i,j)));
         if (distance < 15.0) {
-          if (isClosestReceiving(v_texCoord/onePixel, u_mouse+vec2(i, j))) {
+          if (isClosestReceiving(v_texCoord/onePixel, nextMouse+vec2(i, j))) {
             amount += getSandDataFromCoords(u_mouse+vec2(i, j));
             count++;
-          } else if (isClosestReceiving(v_texCoord/onePixel, u_mouse+vec2(i, -j))) {
+          } else if (isClosestReceiving(v_texCoord/onePixel, nextMouse+vec2(i, -j))) {
             amount += getSandDataFromCoords(u_mouse+vec2(i, -j));
             count++;
-          } else if (isClosestReceiving(v_texCoord/onePixel, u_mouse+vec2(-i, j))) {
+          } else if (isClosestReceiving(v_texCoord/onePixel, nextMouse+vec2(-i, j))) {
             amount += getSandDataFromCoords(u_mouse+vec2(-i, j));
             count++;
-          } else if (isClosestReceiving(v_texCoord/onePixel, u_mouse+vec2(-i, -j))) {
+          } else if (isClosestReceiving(v_texCoord/onePixel, nextMouse+vec2(-i, -j))) {
             amount += getSandDataFromCoords(u_mouse+vec2(-i, -j));
             count++;
           }
@@ -182,22 +180,29 @@
 
   void main() {
     grains = texture2D(u_image, v_texCoord).xyz;
-    angle = getMouseAngle();
     if (u_stage == -2.0) {
       float value = texture2D(u_image, v_texCoord).x;
-      gl_FragColor = vec4(value, 0.0, 0.0, 0.0);
+      gl_FragColor = vec4(1.0, 0.0, 0.0, 0.0);
     }
     else if (u_stage == 0.0) {
-      float distance = floor(sqrt(pow((mouseCs.x-v_texCoord.x)/onePixel.x, 2.0) + pow((mouseCs.y-v_texCoord.y)/onePixel.y, 2.0)));
-      if(distance < 15.0) {
-        gl_FragColor = texture2D(u_image, v_texCoord);
-        gl_FragColor.x = 0.0;
+      float sandValue = texture2D(u_image, v_texCoord).x;
+      for(int i=0;i<1;i++) {
+        if (mod(float(i), 2.0) == 0.0) {
+          if (u_touchlocations[i].x > 0.0) {
+            vec2 prevMouse = vec2(float(u_touchlocations[i].x), float(u_touchlocations[i].y));
+            vec2 nextMouse = vec2(float(u_touchlocations[i+1].x), float(u_touchlocations[i+1].y));
+            float distance = floor(getDistanceFromOrigin(nextMouse-v_texCoord/onePixel));
+            if(distance < 15.0) {
+              sandValue = 0.0;
+            }
+            else if (distance == 15.0 && isReceiving(v_texCoord/onePixel, nextMouse, prevMouse)) {
+              sandValue += getDisplacementAmount(nextMouse);
+            }
+          }
+        }
       }
-      else if (distance == 15.0 && isReceiving(v_texCoord/onePixel)) {
-        gl_FragColor.x += getDisplacementAmount();
-      } else {
-        gl_FragColor = texture2D(u_image, v_texCoord);
-      }
+      gl_FragColor = texture2D(u_image, v_texCoord);
+      gl_FragColor.x = sandValue;
     }
     else if (u_stage == 1.0) {
       getNeighbors();

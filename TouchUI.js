@@ -1,32 +1,31 @@
 var TouchUI = (function(){
   var currentTouches = []; // Store the fingertip objects by touch id. The array may contain gaps.
   var canvas;
-  var sandbox;
-
-  function init(sandboxObj) {
-    sandbox = sandboxObj;
-    canvas = sandbox.sandCanvas.canvas;
+  function init(canvasEl) {
+    canvas = canvasEl;
     canvas.addEventListener("touchstart", startTouch);
     canvas.addEventListener("touchend", endTouch);
     canvas.addEventListener("touchcancel", cancelTouch);
     canvas.addEventListener("touchleave", endTouch);
     canvas.addEventListener("touchmove", moveTouch);
-    requestAnimationFrame(sandbox.sandCanvas.renderLoop.bind(sandbox.sandCanvas));
+  }
+
+  function getTouches() {
+    return currentTouches;
+  }
+
+  function getEventCoords(event) {
+    return {
+      x: event.pageX - canvas.offsetLeft,
+      y: event.pageY - canvas.offsetTop
+    };
   }
 
   function startTouch(event) {
     event.preventDefault();
-
     for (var i = 0; i < event.changedTouches.length; i++) {
-      var left = canvas.offsetLeft;
-      var top = canvas.offsetTop;
-      var x = event.changedTouches[i].pageX - left;
-      var y = event.changedTouches[i].pageY - top;
-
-      var fingertip = new Fingertip(x, y, FINGERTIP_RADIUS, sandbox);
-      var id = event.changedTouches[i].identifier;
-      currentTouches[id] = fingertip;
-      sandbox.addFingertip(fingertip);
+      var touch = event.changedTouches[i];
+      currentTouches[touch.identifier] = new Fingertip(getEventCoords(touch));
     }
   }
 
@@ -34,15 +33,8 @@ var TouchUI = (function(){
     event.preventDefault();
 
     for (var i = 0; i < event.changedTouches.length; i++) {
-      var id = event.changedTouches[i].identifier;
-
-      var left = canvas.offsetLeft;
-      var top = canvas.offsetTop;
-      var x = event.changedTouches[i].pageX - left;
-      var y = event.changedTouches[i].pageY - top;
-
-      var fingertip = currentTouches[id];
-      fingertip.moveTo(x, y);
+      var touch = event.changedTouches[i];
+      currentTouches[touch.identifier].moveTo(getEventCoords(touch));
     }
   }
 
@@ -50,16 +42,7 @@ var TouchUI = (function(){
     event.preventDefault();
 
     for (var i = 0; i < event.changedTouches.length; i++) {
-      var id = event.changedTouches[i].identifier;
-
-      var left = canvas.offsetLeft;
-      var top = canvas.offsetTop;
-      var x = event.changedTouches[i].pageX - left;
-      var y = event.changedTouches[i].pageY - top;
-
-      var fingertip = currentTouches[id];
-      sandbox.removeFingertip(fingertip);
-      delete currentTouches[id];
+      delete currentTouches[event.changedTouches[i].identifier];
     }
   }
 
@@ -67,7 +50,48 @@ var TouchUI = (function(){
     endTouch(event);
   }
 
+  function copyArray() {
+    var arr = [];
+    for (var i = 0; i < currentTouches.length; i++) {
+      if (currentTouches[i]) {
+        arr.push(currentTouches[i].prevX);
+        arr.push(currentTouches[i].prevY);
+        arr.push(currentTouches[i].x);
+        arr.push(currentTouches[i].y);
+      }
+    }
+    return arr;
+  }
+
+  function resetPrevValues() {
+    for (var i = 0; i < currentTouches.length; i++) {
+      if (currentTouches[i]) {
+        currentTouches[i].prevX = currentTouches[i].x;
+        currentTouches[i].prevY = currentTouches[i].y;
+      }
+    }
+  }
+
+  function getArrayCopy() {
+    var arr = [];
+    for (var i = 0; i < currentTouches.length; i++) {
+      if (currentTouches[i]) {
+        arr.push({
+          prevX: currentTouches[i].prevX,
+          prevY: currentTouches[i].prevY,
+          x: currentTouches[i].x,
+          y: currentTouches[i].y
+        });
+      }
+    }
+    return arr;
+  }
+
   return {
-    init : init
+    init : init,
+    getTouches : getTouches,
+    getArrayCopy : getArrayCopy,
+    copyArray : copyArray,
+    resetPrevValues : resetPrevValues
   };
 })();

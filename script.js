@@ -16,6 +16,8 @@ function start() {
 function render() {
   // Get A WebGL context
   var canvas = document.getElementById("canvas");
+  var ui = TouchUI;
+  ui.init(canvas);
   var gl = getWebGLContext(canvas);
   if (!gl) {
     return;
@@ -90,6 +92,7 @@ function render() {
   var stageLocation = gl.getUniformLocation(program, "u_stage");
   var mouseLocation = gl.getUniformLocation(program, "u_mouse");
   var prevMouseLocation = gl.getUniformLocation(program, "u_prev_mouse");
+  var touchLocations = gl.getUniformLocation(program, "u_touchlocations");
 
   // set the size of the image
   gl.uniform2f(textureSizeLocation, WIDTH, HEIGHT);
@@ -103,74 +106,86 @@ function render() {
   // Set a rectangle the same size as the image.
   setRectangle( gl, 0, 0, WIDTH, HEIGHT);
 
-  var mouseCoords = {};
-  document.addEventListener('mousemove', function(evt) {
-    mouseCoords.x = evt.clientX - canvas.offsetLeft;
-    mouseCoords.y = evt.clientY - canvas.offsetTop;
-  }, false);
   // start with the original image
   gl.bindTexture(gl.TEXTURE_2D, originalImageTexture);
   var first = true;
   var count = 0;
   requestAnimationFrame(drawEffects);
   function drawEffects() {
-    count = count % 2;
     // don't y flip images while drawing to the textures
     gl.uniform1f(flipYLocation, 1);
-    // loop through each effect we want to apply.
-    var iters = 2;
-    if (first) {
-      iters = 3;
-    }
-    if (mouseCoords.x) {
-      mouseCoords.stat = {x: mouseCoords.x, y: mouseCoords.y};
-      if (!mouseCoords.prev) {
-        mouseCoords.prev = {x: mouseCoords.x, y: mouseCoords.y};
-      } else {
-        gl.uniform1f(stageLocation, 0);
-        applyBetweenPoints(mouseCoords.prev.x, mouseCoords.prev.y, mouseCoords.stat.x, mouseCoords.stat.y, function(x, y) {
-          if (mouseCoords.prev.x != x || mouseCoords.prev.y != y) {
-            gl.uniform2f(mouseLocation, x, y);
-            gl.uniform2f(prevMouseLocation, mouseCoords.prev.x, mouseCoords.prev.y);
-            mouseCoords.prev.x = x;
-            mouseCoords.prev.y = y;
-            setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
-            draw();
-            // for the next draw, use the texture we just rendered to.
-            gl.bindTexture(gl.TEXTURE_2D, textures[count % 2]);
-            // increment count so we use the other texture next time.
-            ++count;
+    count = count % 2;
+    function displacement() {
+      gl.uniform1f(stageLocation, 0);
+      var touches = ui.getArrayCopy();
+      var arr = ui.copyArray();
+      ui.resetPrevValues();
+      while (touches.length > 0) {
+        var n = 1;
+        for (var i=0; i<touches.length;i=i+4) {
+          var nextCoord = getNthCoordTowards(arr[i*4], arr[i*4+1], touches[i].x, touches[i].y, n);
+          if (nextCoord == null) {
+            touches.splice(i, 1);
+            arr.splice(i*4, 4);
+            i--;
+          } else {
+            arr[i*4+2] = nextCoord.x;
+            arr[i*4+3] = nextCoord.y;
           }
-          
-        });
+          n++;
+        }
+        if (arr.length > 0) {
+          gl.uniform2fv(touchLocations, new Float32Array(arr));
+          // Draw
+          setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
+          draw();
+          // for the next draw, use the texture we just rendered to.
+          gl.bindTexture(gl.TEXTURE_2D, textures[count % 2]);
+          // increment count so we use the other texture next time.
+          ++count;
+          // End draw
+          for (var i=0; i<arr.length;i=i+4) {
+            arr[i] = arr[i+2];
+            arr[i+1] = arr[i+3];
+          }
+        }
       }
     }
-
-    for (var ii = 0; ii < iters; ++ii) {
-      if (first) {
-        gl.uniform1f(stageLocation, -2);
-        first = false;
-      } else {
-        gl.uniform1f(stageLocation, ii);
-      }
-      // Setup to draw into one of the framebuffers.
+    function erosion() {
+      gl.uniform1f(stageLocation, 1);
       setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
-
       draw();
-
       // for the next draw, use the texture we just rendered to.
       gl.bindTexture(gl.TEXTURE_2D, textures[count % 2]);
-
       // increment count so we use the other texture next time.
       ++count;
     }
 
-    // finally draw the result to the canvas.
-    gl.uniform1f(flipYLocation, -1);  // need to y flip for canvas
-    gl.uniform1f(stageLocation, -1);
-    setFramebuffer(null, canvas.width, canvas.height);
-    draw();
-    requestAnimationFrame(drawEffects);
+    function setupSand() {
+      gl.uniform1f(stageLocation, -2);
+      setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
+      draw();
+      // for the next draw, use the texture we just rendered to.
+      gl.bindTexture(gl.TEXTURE_2D, textures[count % 2]);
+      // increment count so we use the other texture next time.
+      ++count;
+    }
+
+    function renderToScreen() {
+      // finally draw the result to the canvas.
+      gl.uniform1f(flipYLocation, -1);  // need to y flip for canvas
+      gl.uniform1f(stageLocation, -1);
+      setFramebuffer(null, canvas.width, canvas.height);
+      draw();
+      requestAnimationFrame(drawEffects);
+    }
+    if (first) {
+      setupSand();
+      first = false;
+    }
+    displacement();
+    erosion();
+    renderToScreen();
   }
 
   function setFramebuffer(fbo, width, height) {
@@ -209,22 +224,39 @@ function setRectangle(gl, x, y, width, height) {
 }
 
 function applyBetweenPoints(x0, y0, x1, y1, func) {
-    if (x0 == null || y0 == null || x1 == null || y1 == null) {
-      return;
-    } else if (x0 == x1 && y0 == y1){
-      return;
-    } else {
-      var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-      var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-      var err = (dx>dy ? dx : -dy)/2;
-      while (true) {
-        if (x0 === x1 && y0 === y1) break;
-        func(x0,y0);
-        
-        var e2 = err;
-        if (e2 > -dx) { err -= dy; x0 += sx; }
-        if (e2 < dy) { err += dx; y0 += sy; }
-      }
+  if (x0 == null || y0 == null || x1 == null || y1 == null) {
+    return;
+  } else if (x0 == x1 && y0 == y1){
+    return;
+  } else {
+    var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    var err = (dx>dy ? dx : -dy)/2;
+    while (true) {
+      if (x0 === x1 && y0 === y1) break;
+      func(x0,y0);
+      
+      var e2 = err;
+      if (e2 > -dx) { err -= dy; x0 += sx; }
+      if (e2 < dy) { err += dx; y0 += sy; }
     }
-
   }
+}
+
+function getNthCoordTowards(x0, y0, x1, y1, n) {
+  var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+  var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+  var err = (dx>dy ? dx : -dy)/2;
+  var count = 0;
+  while (true) {
+    if (count==n) {
+      return {x: x0, y: y0};
+    }
+    if (x0 === x1 && y0 === y1) break;
+    var e2 = err;
+    if (e2 > -dx) { err -= dy; x0 += sx; }
+    if (e2 < dy) { err += dx; y0 += sy; }
+    count++;
+  }
+  return null;
+}
