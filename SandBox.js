@@ -11,13 +11,6 @@ var Sandbox = function(canvas) {
 };
 
 Sandbox.prototype.initialize = function() {
-  var allCoords = new CoordSet();
-  for (var i=0;i<this.width;i++) {
-    for (var j=0;j<this.height;j++) {
-      allCoords.addCoord(i,j);
-    }
-  }
-  this.erosion.run(allCoords);
   this.sandCanvas.drawWholeBox();
 };
 
