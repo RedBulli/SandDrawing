@@ -22,13 +22,16 @@ Sandbox.prototype.addFingertip = function(fingertip) {
 
 Sandbox.prototype.removeFingertip = function(fingertip) {
   var i = this.fingertips.indexOf(fingertip);
-  var changedGrid = fingertip.occupiedCoords;
-  changedGrid.mergeSets(this.grid.getOuterNeighbours(changedGrid));
-  this.erosion.run(changedGrid);
-  this.sandCanvas.queueForRedraw(changedGrid);
   if (i !== -1) {
     this.fingertips.splice(i, 1);
   }
+  var changed = this.grid.getOuterNeighbours(fingertip.occupiedCoords);
+  changed.mergeSets(fingertip.occupiedCoords);
+  if (fingertip.lastDestinationCoordinates) {
+    changed.mergeSets(fingertip.lastDestinationCoordinates);
+  }
+  var changedGrid = this.erosion.run(changed);
+  this.sandCanvas.queueForRedraw(changedGrid);
 };
 
 Sandbox.prototype.isOccupied = function(x, y) {
