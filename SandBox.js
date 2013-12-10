@@ -1,4 +1,6 @@
 var Sandbox = function(canvas) {
+  canvas.height = screen.height;
+  canvas.width = screen.width;
   this.width = canvas.width;
   this.height = canvas.height;
   this.grid = new Grid(this.width, this.height);
