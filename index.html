@@ -43,7 +43,7 @@
   uniform float u_stage;
   uniform vec2 u_mouse;
   uniform vec2 u_prev_mouse;
-  uniform vec2 u_touchlocations[2];
+  uniform vec2 u_touchlocations[8];
 
   // the texCoords passed in from the vertex shader.
   varying vec2 v_texCoord;
@@ -92,7 +92,7 @@
 
   float getDistributeAmount(float neighborValue) {
     float distrAmount = 0.0;
-    if (isTooSteep(grains.x, neighborValue)) {
+    if (isTooSteep(grains.x*2.0, neighborValue)) {
       return (grains.x - neighborValue) * 0.2;
     }
     else {
@@ -186,7 +186,7 @@
     }
     else if (u_stage == 0.0) {
       float sandValue = texture2D(u_image, v_texCoord).x;
-      for(int i=0;i<1;i++) {
+      for(int i=0;i<4;i++) {
         if (mod(float(i), 2.0) == 0.0) {
           if (u_touchlocations[i].x > 0.0) {
             vec2 prevMouse = vec2(float(u_touchlocations[i].x), float(u_touchlocations[i].y));

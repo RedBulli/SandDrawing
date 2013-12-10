@@ -118,21 +118,31 @@ function render() {
     function displacement() {
       gl.uniform1f(stageLocation, 0);
       var touches = ui.getArrayCopy();
-      var arr = ui.copyArray();
+      var paths = [];
       ui.resetPrevValues();
-      while (touches.length > 0) {
-        var n = 1;
-        for (var i=0; i<touches.length;i=i+4) {
-          var nextCoord = getNthCoordTowards(arr[i*4], arr[i*4+1], touches[i].x, touches[i].y, n);
-          if (nextCoord == null) {
-            touches.splice(i, 1);
-            arr.splice(i*4, 4);
-            i--;
+      for (var i=0;i<touches.length;i++) {
+        paths.push(getCoordPath(touches[i].prevX, touches[i].prevY, touches[i].x, touches[i].y));
+      }
+      
+      while (paths.length > 0) {
+        var arr = [];
+        for (var j=0;j<paths.length;j++) {
+          if (paths[j].length == 0) {
+            paths.splice(j, 1);
+            j--;
           } else {
-            arr[i*4+2] = nextCoord.x;
-            arr[i*4+3] = nextCoord.y;
+            var prevCoord = paths[j].splice(0, 1)[0];
+            var nextCoord = paths[j][0];
+            if (!nextCoord) {
+              paths.splice(j, 1);
+              j--;
+            } else {
+              arr.push(prevCoord.x);
+              arr.push(prevCoord.y);
+              arr.push(nextCoord.x);
+              arr.push(nextCoord.y);
+            }
           }
-          n++;
         }
         if (arr.length > 0) {
           gl.uniform2fv(touchLocations, new Float32Array(arr));
@@ -144,10 +154,6 @@ function render() {
           // increment count so we use the other texture next time.
           ++count;
           // End draw
-          for (var i=0; i<arr.length;i=i+4) {
-            arr[i] = arr[i+2];
-            arr[i+1] = arr[i+3];
-          }
         }
       }
     }
@@ -259,4 +265,22 @@ function getNthCoordTowards(x0, y0, x1, y1, n) {
     count++;
   }
   return null;
+}
+
+function getCoordPath(x0, y0, x1, y1) {
+  var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+  var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+  var err = (dx>dy ? dx : -dy)/2;
+  var arr = [];
+  while (true) {
+    arr.push({x: x0, y: y0});
+    if (x0 === x1 && y0 === y1) break;
+    var e2 = err;
+    if (e2 > -dx) { err -= dy; x0 += sx; }
+    if (e2 < dy) { err += dx; y0 += sy; }
+  }
+  if (arr.length <= 1) {
+    return [];
+  } 
+  return arr;
 }
