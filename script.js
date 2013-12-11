@@ -283,7 +283,7 @@ function getCoordPath(x0, y0, x1, y1) {
   var arr = [];
   var count = 0;
   while (true) {
-    if (count < 2 || count % 5 == 0) {
+    if (count < 2 || count % 2 == 0) {
       arr.push({x: x0, y: y0});
     }
     count++;

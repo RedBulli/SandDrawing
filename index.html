@@ -61,8 +61,8 @@
   vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
   vec3 grains;
   vec3 neighbors[8];
-  const float mouseSize = 7.0;
-  const float steepVal = 0.2;
+  const float mouseSize = 8.0;
+  const float steepVal = 0.15;
 
   vec3 getSandData(float xoff, float yoff) {
     return texture2D(u_image, v_texCoord + vec2(onePixel.x*xoff, onePixel.y*yoff)).xyz;
@@ -142,15 +142,29 @@
 
   float getDisplacementAmount(float angle, vec2 nextMouse) {
     float amount = 0.0;
-    for (float i=1.0;i<mouseSize;i++) {
-      float r = i;
-      if (cos(angle) < 1.0) {
-        r = r * sqrt(2.0);
-      }
-      if (r < mouseSize) {
-        float toX = floor(cos(angle) * r + 0.5);
-        float toY = floor(sin(angle) * r + 0.5);
-        amount += getSandDataFromCoords(nextMouse+vec2(toX, toY));
+    for (float i=-mouseSize+1.0;i<mouseSize;i++) {
+      if (i!=0.0) {
+        float r = i;
+        if (cos(angle) < 1.0) {
+          r = r * sqrt(2.0);
+        }
+        float toX = cos(angle) * r;
+        float toY = sin(angle) * r;
+        if (toX < 0.0) {
+          floor(toX);
+        } else {
+          floor(toX+0.5);
+        }
+        if (toY < 0.0) {
+          floor(toY);
+        } else {
+          floor(toY+0.5);
+        }
+
+        if (getDistanceFromOrigin(nextMouse - v_texCoord/onePixel + vec2(toX,toY)) < mouseSize) {
+          amount += getSandDataFromCoords(v_texCoord/onePixel+vec2(toX, toY));
+        }
+
       }
     }
     return amount;
@@ -203,7 +217,7 @@
     else if (u_stage == 0.0) {
       //Displacement stage
       float sandValue = texture2D(u_image, v_texCoord).x;
-      for(int i=0;i<4;i++) {
+      for(int i=0;i<8;i++) {
         if (u_touchlocations[i].x > 0.0) {
           vec2 prevMouse = vec2(float(u_touchlocations[i].x), float(u_touchlocations[i].y));
           vec2 nextMouse = vec2(float(u_touchlocations[i].z), float(u_touchlocations[i].w));
@@ -213,7 +227,7 @@
           }
           else if (distance == mouseSize && isReceiving(v_texCoord/onePixel, nextMouse, prevMouse)) {
             vec2 curr = v_texCoord/onePixel;
-            float angle = atan(-nextMouse.y+curr.y,-nextMouse.x+curr.x);
+            float angle = atan(nextMouse.y-prevMouse.y,nextMouse.x-prevMouse.x);
             sandValue += getDisplacementAmount(angle, nextMouse);
           }
         }
@@ -233,7 +247,12 @@
       vec4 baseColor = vec4(0.968, 0.83, 0.605, 1.0);
       //1 pitää olla lähes musta
       //0 pitää olla valkoinen
-      gl_FragColor = vec4(0.968-(0.968*value), 0.83-(0.83*value), 0.605-(0.605*value), 1.0);
+      if (value == 0.0) {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      } else {
+        gl_FragColor = vec4(0.968-(0.968*value), 0.83-(0.83*value), 0.605-(0.605*value), 1.0);
+      }
+      
     }
   }
 </script>
