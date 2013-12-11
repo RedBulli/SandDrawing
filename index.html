@@ -140,9 +140,9 @@
     return getDistanceFromOrigin(mouseCoord-coord) < getDistanceFromOrigin(prevMouseCoord-coord);
   }
 
-  float getDisplacementAmount(float angle, vec2 nextMouse) {
+  float getDisplacementAmount(float angle, vec2 nextMouse, vec2 prevMouse) {
     float amount = 0.0;
-    for (float i=-mouseSize+1.0;i<mouseSize;i++) {
+    for (float i=-mouseSize-2.0;i<mouseSize+2.0;i++) {
       if (i!=0.0) {
         float r = i;
         if (cos(angle) < 1.0) {
@@ -159,7 +159,10 @@
         toX = floor(toX);
         toY = floor(toY);
         vec2 fetchCoord = v_texCoord/onePixel + vec2(toX,toY);
-        if (floor(getDistanceFromOrigin(nextMouse - fetchCoord)) < mouseSize) {
+        if (
+          (floor(getDistanceFromOrigin(nextMouse - fetchCoord)) < mouseSize) || 
+          (floor(getDistanceFromOrigin(prevMouse - fetchCoord)) < mouseSize)
+        ) {
           amount += getSandDataFromCoords(fetchCoord);
         }
 
@@ -226,7 +229,7 @@
           else if (distance == mouseSize && isReceiving(v_texCoord/onePixel, nextMouse, prevMouse)) {
             vec2 curr = v_texCoord/onePixel;
             float angle = atan(nextMouse.y-prevMouse.y,nextMouse.x-prevMouse.x);
-            sandValue += getDisplacementAmount(angle, nextMouse);
+            sandValue += getDisplacementAmount(angle, nextMouse, prevMouse);
           }
         }
       }
