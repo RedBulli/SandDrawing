@@ -4,8 +4,8 @@
 
 //TODO Liika displacement saattaa ollakin eroosion ongelma!!!!!
 
-var WIDTH = 1024;
-var HEIGHT = 512;
+var WIDTH = 512;
+var HEIGHT = 256;
 window.onload = start;
 
 function start() {
