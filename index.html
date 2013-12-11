@@ -7,6 +7,12 @@
   body, canvas {
     margin: 0px;
     padding: 0px;
+    background-color: black;
+  }
+  canvas {
+    margin: auto;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
   }
 </style>
 <script type="text/javascript" src="webgl-utils.js"></script>
@@ -55,8 +61,8 @@
   vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
   vec3 grains;
   vec3 neighbors[8];
-  const float mouseSize = 10.0;
-  const float steepVal = 3.0;
+  const float mouseSize = 7.0;
+  const float steepVal = 0.2;
 
   vec3 getSandData(float xoff, float yoff) {
     return texture2D(u_image, v_texCoord + vec2(onePixel.x*xoff, onePixel.y*yoff)).xyz;
@@ -68,7 +74,7 @@
 
   bool isTooSteep(float x, float y) {
     if (x > y) {
-      return atan((x-y)*steepVal) > 1.0;
+      return atan((x-y)) > steepVal;
     }
     else {
       return false;
