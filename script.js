@@ -121,7 +121,6 @@ function render() {
       for (var i=0;i<touches.length;i++) {
         paths.push(getCoordPath(touches[i].prevX, touches[i].prevY, touches[i].x, touches[i].y));
       }
-      
       while (paths.length > 0) {
         var arr = [];
         for (var j=0;j<paths.length;j++) {
@@ -282,8 +281,14 @@ function getCoordPath(x0, y0, x1, y1) {
   var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
   var err = (dx>dy ? dx : -dy)/2;
   var arr = [];
+  var count = 0;
   while (true) {
-    arr.push({x: x0, y: y0});
+    if (count < 2 || count % 6 == 0) {
+      arr.push({x: x0, y: y0});
+    }
+    count++;
+    
+    
     if (x0 === x1 && y0 === y1) break;
     var e2 = err;
     if (e2 > -dx) { err -= dy; x0 += sx; }
