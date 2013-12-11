@@ -150,19 +150,17 @@
         }
         float toX = cos(angle) * r;
         float toY = sin(angle) * r;
-        if (toX < 0.0) {
-          floor(toX);
-        } else {
-          floor(toX+0.5);
+        if (toX > 0.0) {
+          toX += 0.5;
         }
-        if (toY < 0.0) {
-          floor(toY);
-        } else {
-          floor(toY+0.5);
+        if (toY > 0.0) {
+          toY += 0.5;
         }
-
-        if (getDistanceFromOrigin(nextMouse - v_texCoord/onePixel + vec2(toX,toY)) < mouseSize) {
-          amount += getSandDataFromCoords(v_texCoord/onePixel+vec2(toX, toY));
+        toX = floor(toX);
+        toY = floor(toY);
+        vec2 fetchCoord = v_texCoord/onePixel + vec2(toX,toY);
+        if (floor(getDistanceFromOrigin(nextMouse - fetchCoord)) < mouseSize) {
+          amount += getSandDataFromCoords(fetchCoord);
         }
 
       }
