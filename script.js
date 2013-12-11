@@ -90,8 +90,6 @@ function render() {
   var textureSizeLocation = gl.getUniformLocation(program, "u_textureSize");
   var flipYLocation = gl.getUniformLocation(program, "u_flipY");
   var stageLocation = gl.getUniformLocation(program, "u_stage");
-  var mouseLocation = gl.getUniformLocation(program, "u_mouse");
-  var prevMouseLocation = gl.getUniformLocation(program, "u_prev_mouse");
   var touchLocations = gl.getUniformLocation(program, "u_touchlocations");
 
   // set the size of the image
@@ -145,7 +143,7 @@ function render() {
           }
         }
         if (arr.length > 0) {
-          gl.uniform2fv(touchLocations, new Float32Array(arr));
+          gl.uniform4fv(touchLocations, new Float32Array(arr));
           // Draw
           setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
           draw();
@@ -157,6 +155,16 @@ function render() {
         }
       }
     }
+    function erosionReceive() {
+      gl.uniform1f(stageLocation, -1);
+      setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
+      draw();
+      // for the next draw, use the texture we just rendered to.
+      gl.bindTexture(gl.TEXTURE_2D, textures[count % 2]);
+      // increment count so we use the other texture next time.
+      ++count;
+    }
+
     function erosion() {
       gl.uniform1f(stageLocation, 1);
       setFramebuffer(framebuffers[count % 2], WIDTH, HEIGHT);
@@ -180,7 +188,7 @@ function render() {
     function renderToScreen() {
       // finally draw the result to the canvas.
       gl.uniform1f(flipYLocation, -1);  // need to y flip for canvas
-      gl.uniform1f(stageLocation, -1);
+      gl.uniform1f(stageLocation, 2);
       setFramebuffer(null, canvas.width, canvas.height);
       draw();
       requestAnimationFrame(drawEffects);
@@ -188,6 +196,8 @@ function render() {
     if (first) {
       setupSand();
       first = false;
+    } else {
+      erosionReceive();
     }
     displacement();
     erosion();

@@ -41,9 +41,7 @@
   uniform sampler2D u_image;
   uniform vec2 u_textureSize;
   uniform float u_stage;
-  uniform vec2 u_mouse;
-  uniform vec2 u_prev_mouse;
-  uniform vec2 u_touchlocations[8];
+  uniform vec4 u_touchlocations[8];
 
   // the texCoords passed in from the vertex shader.
   varying vec2 v_texCoord;
@@ -51,6 +49,8 @@
   vec2 onePixel = vec2(1.0, 1.0) / u_textureSize;
   vec3 grains;
   vec3 neighbors[8];
+  const float mouseSize = 10.0;
+  const float steepVal = 3.0;
 
   vec3 getSandData(float xoff, float yoff) {
     return texture2D(u_image, v_texCoord + vec2(onePixel.x*xoff, onePixel.y*yoff)).xyz;
@@ -62,7 +62,7 @@
 
   bool isTooSteep(float x, float y) {
     if (x > y) {
-      return atan((x-y)) > 1.0;
+      return atan((x-y)*steepVal) > 1.0;
     }
     else {
       return false;
@@ -80,19 +80,19 @@
     neighbors[7] = getSandData(1.0, 1.0);
   }
 
-  void receiveFromLastRound() {
+  float receiveFromLastRound() {
     float receiveAmount = 0.0;
     for (int i=0;i<8;i++) {
       if (isTooSteep(neighbors[i].z, grains.x)) {
         receiveAmount += neighbors[i].y;
       }
     }
-    grains.x += receiveAmount;
+    return receiveAmount;
   }
 
   float getDistributeAmount(float neighborValue) {
     float distrAmount = 0.0;
-    if (isTooSteep(grains.x*2.0, neighborValue)) {
+    if (isTooSteep(grains.x, neighborValue)) {
       return (grains.x - neighborValue) * 0.2;
     }
     else {
@@ -107,12 +107,12 @@
     for (int i=0;i<8;i++) {
       distrAmount = getDistributeAmount(neighbors[i].x);
       if (distrAmount > 0.0) {
-        n += 1.0;
+        n++;
         totalDistrAmount += distrAmount;
       }
     }
     if (n > 0.0) {
-      grains.x -= totalDistrAmount / n;
+      grains.x = grains.x - totalDistrAmount;
       return totalDistrAmount / n;
     }
     else {
@@ -128,97 +128,100 @@
     return getDistanceFromOrigin(mouseCoord-coord) < getDistanceFromOrigin(prevMouseCoord-coord);
   }
 
-  bool isClosestReceiving(vec2 receivCoord, vec2 giveCoord) {
-    return true;
-    float compDistance = getDistanceFromOrigin(receivCoord - giveCoord);
-    if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(0, 1))) {
-      return false;
-    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(0, -1))) {
-      return false;
-    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(1, -1))) {
-      return false;
-    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(1, 0))) {
-      return false;
-    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(1, 1))) {
-      return false;
-    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(-1, -1))) {
-      return false;
-    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(-1, 0))) {
-      return false;
-    } else if (compDistance > getDistanceFromOrigin(giveCoord-compDistance+vec2(-1, 1))) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  float getDisplacementAmount(vec2 nextMouse) {
+  float getDisplacementAmount(float angle, vec2 nextMouse) {
     float amount = 0.0;
-    float count = 0.0;
-    for (float i=0.0;i<15.0;i++) {
-      for (float j=0.0;j<15.0;j++) {
-        float distance = floor(getDistanceFromOrigin(vec2(i,j)));
-        if (distance < 15.0) {
-          if (isClosestReceiving(v_texCoord/onePixel, nextMouse+vec2(i, j))) {
-            amount += getSandDataFromCoords(u_mouse+vec2(i, j));
-            count++;
-          } else if (isClosestReceiving(v_texCoord/onePixel, nextMouse+vec2(i, -j))) {
-            amount += getSandDataFromCoords(u_mouse+vec2(i, -j));
-            count++;
-          } else if (isClosestReceiving(v_texCoord/onePixel, nextMouse+vec2(-i, j))) {
-            amount += getSandDataFromCoords(u_mouse+vec2(-i, j));
-            count++;
-          } else if (isClosestReceiving(v_texCoord/onePixel, nextMouse+vec2(-i, -j))) {
-            amount += getSandDataFromCoords(u_mouse+vec2(-i, -j));
-            count++;
-          }
-        }
+    for (float i=1.0;i<mouseSize;i++) {
+      float r = i;
+      if (cos(angle) < 1.0) {
+        r = r * sqrt(2.0);
+      }
+      if (r < mouseSize) {
+        float toX = floor(cos(angle) * r + 0.5);
+        float toY = floor(sin(angle) * r + 0.5);
+        amount += getSandDataFromCoords(nextMouse+vec2(toX, toY));
       }
     }
-    return amount / count;
+    return amount;
   }
 
+  float undulate(float x)
+  {
+      if(x < -0.4)
+      {
+          return 0.15 + 2.857 * (x + 0.75)*(x + 0.75);
+      }
+      else if(x < 0.4)
+      {
+          return 0.95 - 2.8125 * (x*x);
+      }
+      else
+      {
+          return 0.26 + 2.666 * (x - 0.7)*(x - 0.7);
+      }
+  }
+ 
+  float marble(vec2 p)
+  {
+      float PI = 3.1415;
+      float s = 0.25;
+      float a = 2.0;
+      
+      // this computes 3 octaves of turbulence
+      vec4 t1 = 1.0*vec4(p, 0.2, 0.2);
+      vec4 t2 = 0.5*vec4(p, 0.2, 0.2);
+      vec4 t3 = 0.25*vec4(p, 0.2, 0.2);
+   
+      float m = undulate(sin(p.y*2.0*PI + a*(t1.x + t2.x + t3.x)));
+     
+      return m;
+  }
+ 
   void main() {
     grains = texture2D(u_image, v_texCoord).xyz;
     if (u_stage == -2.0) {
-      float value = texture2D(u_image, v_texCoord).x;
-      gl_FragColor = vec4(1.0, 0.0, 0.0, 0.0);
+      float val = marble(v_texCoord);
+      gl_FragColor = vec4(val, 0.0, 0.0, 1.0);
+    }
+    else if (u_stage == -1.0) {
+      //Receive from last erosions stage
+      getNeighbors();
+      float received = receiveFromLastRound();
+      gl_FragColor = vec4(grains.x+received, 0.0, 0.0, 1.0);
     }
     else if (u_stage == 0.0) {
+      //Displacement stage
       float sandValue = texture2D(u_image, v_texCoord).x;
       for(int i=0;i<4;i++) {
-        if (mod(float(i), 2.0) == 0.0) {
-          if (u_touchlocations[i].x > 0.0) {
-            vec2 prevMouse = vec2(float(u_touchlocations[i].x), float(u_touchlocations[i].y));
-            vec2 nextMouse = vec2(float(u_touchlocations[i+1].x), float(u_touchlocations[i+1].y));
-            float distance = floor(getDistanceFromOrigin(nextMouse-v_texCoord/onePixel));
-            if(distance < 15.0) {
-              sandValue = 0.0;
-            }
-            else if (distance == 15.0 && isReceiving(v_texCoord/onePixel, nextMouse, prevMouse)) {
-              sandValue += getDisplacementAmount(nextMouse);
-            }
+        if (u_touchlocations[i].x > 0.0) {
+          vec2 prevMouse = vec2(float(u_touchlocations[i].x), float(u_touchlocations[i].y));
+          vec2 nextMouse = vec2(float(u_touchlocations[i].z), float(u_touchlocations[i].w));
+          float distance = floor(getDistanceFromOrigin(nextMouse-v_texCoord/onePixel));
+          if(distance < mouseSize) {
+            sandValue = 0.0;
+          }
+          else if (distance == mouseSize && isReceiving(v_texCoord/onePixel, nextMouse, prevMouse)) {
+            vec2 curr = v_texCoord/onePixel;
+            float angle = atan(-nextMouse.y+curr.y,-nextMouse.x+curr.x);
+            sandValue += getDisplacementAmount(angle, nextMouse);
           }
         }
       }
-      gl_FragColor = texture2D(u_image, v_texCoord);
-      gl_FragColor.x = sandValue;
+      gl_FragColor = vec4(sandValue, 0.0, 0.0, 1.0);
     }
     else if (u_stage == 1.0) {
       getNeighbors();
-      receiveFromLastRound();
       float prevValue = grains.x;
       float distribute = getTotalDistributeAmount();
-      if (distribute == 0.0) {
-        prevValue = 0.0;
-      }
       // x = amount of sand, y = amount to be distributed to all receivers
       // z = previous amout that calculated the distribution
       gl_FragColor = vec4(grains.x, distribute, prevValue, 0.5);
     }
     else {
       float value = texture2D(u_image, v_texCoord).x;
-      gl_FragColor = vec4(1.0-value, 1.0, 1.0, 0.5);
+      vec4 baseColor = vec4(0.968, 0.83, 0.605, 1.0);
+      //1 pitää olla lähes musta
+      //0 pitää olla valkoinen
+      gl_FragColor = vec4(0.968-(0.968*value), 0.83-(0.83*value), 0.605-(0.605*value), 1.0);
     }
   }
 </script>
