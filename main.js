@@ -1,5 +1,6 @@
 $(document).ready(function() {
-  var sandbox = new Sandbox('sandbox', 1000,1000);
+  var canvas = document.getElementById('sandbox');
+  var sandbox = new Sandbox(canvas);
   sandbox.initialize();
   TouchUI.init(sandbox);
 });

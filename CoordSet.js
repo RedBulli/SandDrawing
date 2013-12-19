@@ -7,7 +7,11 @@ function CoordSet()
     if (!this.items.hasOwnProperty(x)) {
       this.items[x] = {};
     }
-    this.items[x][y] = undefined;
+    this.items[x][y] = true;
+  };
+
+  this.contains = function(x, y) {
+    return this.items[x] ? (this.items[x][y] ? true : false) : false;
   };
 
   this.deleteCoord = function(x, y) {
@@ -54,6 +58,14 @@ function CoordSet()
       _this.deleteCoord(x, y);
     });
     return this;
+  };
+
+  this.filter = function(compFunc) {
+    var _this = this;
+    this.each(function(x,y) {
+      if(!compFunc(x,y))
+        _this.deleteCoord(x,y);
+    });
   };
 
 }

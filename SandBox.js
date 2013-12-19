@@ -1,20 +1,15 @@
-var Sandbox = function(elementId, width, height) {
-  this.grid = new Grid(width, height);
-  this.erosion = new Erosion(this.grid);
-  this.displacement = new Displacement(this.grid);
-  this.sandCanvas = new SandCanvas(elementId, this.grid);
+var Sandbox = function(canvas) {
+  canvas.height = screen.height;
+  canvas.width = screen.width;
+  this.width = canvas.width;
+  this.height = canvas.height;
+  this.grid = new Grid(this.width, this.height);
+  this.erosion = new Erosion(this);
+  this.sandCanvas = new SandCanvas(canvas, this.grid);
   this.fingertips = [];
-  //this.ui = new UI(elementId, this);
 };
 
 Sandbox.prototype.initialize = function() {
-  var allCoords = new CoordSet();
-  for (var i=0;i<WIDTH;i++) {
-    for (var j=0;j<HEIGHT;j++) {
-      allCoords.addCoord(i,j);
-    }
-  }
-  this.erosion.run(allCoords);
   this.sandCanvas.drawWholeBox();
 };
 
@@ -29,6 +24,13 @@ Sandbox.prototype.removeFingertip = function(fingertip) {
   if (i !== -1) {
     this.fingertips.splice(i, 1);
   }
+  var changed = this.grid.getOuterNeighbours(fingertip.occupiedCoords);
+  changed.mergeSets(fingertip.occupiedCoords);
+  if (fingertip.lastDestinationCoordinates) {
+    changed.mergeSets(fingertip.lastDestinationCoordinates);
+  }
+  var changedGrid = this.erosion.run(changed);
+  this.sandCanvas.queueForRedraw(changedGrid);
 };
 
 Sandbox.prototype.isOccupied = function(x, y) {
@@ -55,27 +57,18 @@ Sandbox.prototype.dropSand = function(x, y) {
   this.sandCanvas.queueForRedraw(changedGrid);
 };
 
-Sandbox.prototype.pushSand = function(coords, prevCoords) {
-  var neighbours = this.grid.getOuterNeighbours(coords);
-  neighbours = neighbours.minus(prevCoords);	  // prevent sand from falling behind the finger
-  var totalAmount = 0;
+Sandbox.prototype.pushSand = function(fingertip) {
+  var x0 = fingertip.x;
+  var y0 = fingertip.y;
   var _this = this;
-  coords.each(function(x, y) {
-    totalAmount += _this.grid.getHeight(x,y);
-    _this.grid.setHeight(x, y, 0);
+  var changed = new CoordSet();
+  fingertip.occupiedCoords.each(function(x, y) {
+    var angle = Math.atan2(y - y0, x - x0);
+    var r = Math.round(fingertip.radius - Utils.eucledianDistance(x0, y0, x, y) + 1);
+    var toX = x + Math.round(Math.cos(angle) * r);
+    var toY = y + Math.round(Math.sin(angle) * r);
+    _this.grid.distribute(x, y, toX, toY, _this.grid.getHeight(x,y));
+    changed.addCoord(toX, toY);
   });
-  var distAmount = totalAmount / neighbours.size();
-  neighbours.each(function(x, y) {
-    _this.grid.dropSand(x, y, distAmount);
-  });
-  var changedGrid = this.erosion.run(coords.mergeSets(neighbours));
-  this.sandCanvas.queueForRedraw(changedGrid);
+  return changed;
 };
-
-/*
-Sandbox.prototype.moveSand = function(x, y, prevX, prevY) {
-  var changedGrid = this.displacement.moveSand(x, y, prevX, prevY);
-  changedGrid.mergeSets(this.erosion.run(changedGrid));
-  this.graphics.queueForRedraw(changedGrid);
-};
-*/

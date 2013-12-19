@@ -36,13 +36,11 @@ Grid.prototype.getHeightFromCoords = function(coords) {
 };
 
 Grid.prototype.getNeighbours = function(x, y) {
-  var xVals = this.getNeighbourValues(x, 'x');
-  var yVals = this.getNeighbourValues(y, 'y');
   var neighbours = [];
-  for (var i = xVals.lower; i<=xVals.upper; i++) {
-    for (var j = yVals.lower; j<=yVals.upper; j++) {
-      if (i!==x && j!==y && this.isValid(i, j)) {
-        neighbours.push({x: i, y: j, height: this.getHeight(i, j)});
+  for (var i = -1; i<=1; i++) {
+    for (var j = -1; j<=1; j++) {
+      if (!(i==0 && j==0) && this.isValid(x+i, y+j)) {
+        neighbours.push({x: x+i,y: y+j, height: this.getHeight(x+i, y+j)});
       }
     }
   }
@@ -50,13 +48,11 @@ Grid.prototype.getNeighbours = function(x, y) {
 };
 
 Grid.prototype.getNeighboursCoordSet = function(x, y) {
-  var xVals = this.getNeighbourValues(x, 'x');
-  var yVals = this.getNeighbourValues(y, 'y');
   var neighbours = new CoordSet();
-  for (var i = xVals.lower; i<=xVals.upper; i++) {
-    for (var j = yVals.lower; j<=yVals.upper; j++) {
-      if (i!==x && j!==y && this.isValid(i, j)) {
-        neighbours.addCoord(i, j);
+  for (var i = -1; i<=1; i++) {
+    for (var j = -1; j<=1; j++) {
+      if (!(i==0 && j==0) && this.isValid(x+i, y+j)) {
+        neighbours.addCoord(x+i, y+j);
       }
     }
   }
@@ -69,11 +65,20 @@ Grid.prototype.getInnerCoords = function(x, y, radius) {
   var ceilRadius = Math.ceil(radius);
   for (var i=-floorRadius; i<ceilRadius; i++) {
     for (var j=-floorRadius; j<ceilRadius; j++) {
-      if(Math.sqrt(i*i+j*j)-radius < 0.707 && this.isValid(x+i, y+j)) {
+      if(Utils.isInsideCircle(x,y,x+i,y+j,radius) && this.isValid(x+i, y+j)) {
         coords.addCoord(x+i, y+j);
       }
     }
   }
+  return coords;
+};
+
+Grid.prototype.getInnerCoordsFromPath = function(x1, y1, x2, y2, radius) {
+  var coords = new CoordSet();
+  var _this = this;
+  Utils.applyBetweenPoints(x1,y1,x2,y2, function(x, y) {
+    coords.mergeSets(_this.getInnerCoords(x,y, radius));
+  });
   return coords;
 };
 
@@ -85,22 +90,6 @@ Grid.prototype.getOuterNeighbours = function(coords) {
   });
   neighbours.minus(coords);
   return neighbours;
-};
-
-Grid.prototype.getNeighbourValues = function(value, axis) {
-  var maxVal = this.width;
-  if (axis === 'y') {
-    maxVal = this.height;
-  }
-  if (value === 0) {
-    return {lower: value, upper: value+1};
-  } else {
-    if (value === maxVal-1) {
-      return {lower: value-1, upper: value};
-    } else {
-      return {lower: value-1, upper: value+1};
-    }
-  }
 };
 
 Grid.prototype.distribute = function(giverX, giverY, receiveX, receiveY, amount) {

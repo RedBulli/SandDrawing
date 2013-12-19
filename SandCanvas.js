@@ -1,8 +1,10 @@
-var SandCanvas = function(canvasId, grid) {
+var SandCanvas = function(canvas, grid) {
   this.grid = grid;
-  this.canvas = document.getElementById(canvasId);
+  this.canvas = canvas;
   this.ctx = this.canvas.getContext('2d');
   this.changedCoords = [];
+  this.height = canvas.height;
+  this.width = canvas.width;
 };
 
 SandCanvas.prototype.drawChanged = function(changedCoords) {
@@ -19,26 +21,14 @@ SandCanvas.prototype.drawPixel = function(x, y, z) {
     var percentage = -95 * z / (1 + z);
     var rnd = Utils.gaussianRandom().first * 3;
     percentage += rnd;
-    percentage += this.getNeighbourLights(x,y);
     this.ctx.fillStyle = this.getShadeColor(SAND_COLOR, percentage);
   }
   this.ctx.fillRect(x, y, 1, 1);
 };
 
-SandCanvas.prototype.getNeighbourLights = function(x,y) {
-  var neighbours = this.grid.getNeighbours(x,y);
-  var light = 0;
-  for (var i=0;i<neighbours.length;i++) {
-    if (neighbours[i].height <= 0.1) {
-      light += 0;
-    }
-  }
-  return light;
-};
-
 SandCanvas.prototype.drawWholeBox = function() {
-  for (var i=0;i<WIDTH;i++) {
-    for (var j=0;j<HEIGHT;j++) {
+  for (var i=0;i<this.width;i++) {
+    for (var j=0;j<this.height;j++) {
       this.drawPixel(i, j, this.grid.getHeight(i,j));
     }
   }
