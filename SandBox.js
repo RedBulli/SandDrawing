@@ -5,7 +5,6 @@ var Sandbox = function(canvas) {
   this.height = canvas.height;
   this.grid = new Grid(this.width, this.height);
   this.erosion = new Erosion(this);
-  this.displacement = new Displacement(this.grid);
   this.sandCanvas = new SandCanvas(canvas, this.grid);
   this.fingertips = [];
 };
